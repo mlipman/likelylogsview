@@ -93,7 +93,7 @@ const Home: FC<{logData: LogData}> = ({logData}) => {
     { key: "fitness", display: "Fitness Entries" },
     { key: "meditation", display: "Meditation Entries" },
     { key: "general", display: "General Entries" },
-    // { key: "test", display: "Test Entries" },
+    { key: "test", display: "Test Entries" },
   ];
   return (
     <div>
