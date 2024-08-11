@@ -98,7 +98,7 @@ const Home: FC<{logData: LogData}> = ({logData}) => {
   return (
     <div>
       <h1> My Journal</h1>
-      <h2>deploying to vercel, test commit</h2>
+      <h2>deploying to vercel, trying again</h2>
       {categories.map((category, index) => (
         <LogEntryList 
           entries={logData[category.key]} 
