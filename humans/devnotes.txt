@@ -1,0 +1,10 @@
+integration with vercel was pretty easy. i have a single github repo that is linked both with this repl and a vercel app. pushing to main from replit auto deploys on vercel which is cool. i like nextjs react apps, they seem like a good template for a simple app.
+
+at some point maybe i setup a db to save data to instead of the valtown, but that works fine for now.
+
+i want to add pictures, probably throught image kit or whatever that service i signed up for is called.
+
+very soon i want to add chats with ai. first step is probably a relatively manually set overall prompt, that pulls in the logs and has a single user input and a single output.
+from there maybe conversation, but also considering do chats get saved, how we do log takeaways? maybe don't worry about that to start, i can manually log takeaways as reflections or goals as appropriate.
+
+at some point i can have some more views, including a calendar view, a daily view, plus views where i can add logs.
