@@ -1,113 +1,50 @@
 import { FC } from "react";
-import { format, parseISO } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import { GetServerSideProps } from 'next';
 
-interface LogEntry {
-  message: string;
-  creation_time: string;
-  scope: string;
-}
-
-interface LogData {
-  food: LogEntry[];
-  meditation: LogEntry[];
-  general: LogEntry[];
-  fitness: LogEntry[];
-  test: LogEntry[];
-}
-
-const sampleData: LogData = {
-  food: [
-    {
-      message: "Finished a big binge day with pizza.",
-      creation_time: "2024-07-24T01:22:04.924Z",
-      scope: "reflection",
-    },
-    {
-      message: "second food message.",
-      creation_time: "2024-07-24T03:22:04.924Z",
-      scope: "goal",
-    },
-    // Add a few more food entries here
-  ],
-  fitness: [
-    {
-      message:
-        "Made PT appt and went! Got some good answers and a good plan to move forward.",
-      creation_time: "2024-07-26T17:10:11.521Z",
-      scope: "reflection",
-    },
-    // Add a few more fitness entries here
-  ],
-  meditation: [],
-  general: [],
-  test: [],
+const Home: FC<{}> = ({}) => {
+  return (
+    <CommentTreeView />
+  );
 };
 
-const LogEntryList: FC<{ entries: LogEntry[]; title: string }> = ({
-  entries,
-  title,
-}) => {
-  const formatDate = (dateString: string) => {
-    const date = toZonedTime(parseISO(dateString), "America/Chicago");
-    return format(date, "MMMM d, yyyy h:mm a");
-  };
 
+
+const CommentBox = ({ text, isSelected, width }) => (
+  <div
+    className={`p-4 m-2 border rounded ${isSelected ? "bg-blue-100" : "bg-gray-100"}`}
+    style={{ width }}
+  >
+    {text}
+  </div>
+);
+
+const CommentTreeView = () => {
   return (
-    <div>
-      <h2>{title}</h2>
-      {entries.length > 0 ? (
-        <ul>
-          {entries.map((entry, index) => (
-            <li key={index}>
-              <p>{entry.message}</p>
-              <small>
-                {formatDate(entry.creation_time)} ct - {entry.scope}
-              </small>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No entries yet.</p>
-      )}
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Row 1: Root comment */}
+      <div className="flex mb-4">
+        <CommentBox text="Root Comment" isSelected={false} width="100%" />
+      </div>
+
+      {/* Row 2: Direct replies */}
+      <div className="flex mb-4">
+        <CommentBox text="Selected Reply 1" isSelected={true} width="50%" />
+        <div className="flex w-1/2">
+          <CommentBox text="Reply 2" isSelected={false} width="33.33%" />
+          <CommentBox text="Reply 3" isSelected={false} width="33.33%" />
+          <CommentBox text="Reply 4" isSelected={false} width="33.33%" />
+        </div>
+      </div>
+
+      {/* Row 3: Children of selected reply */}
+      <div className="flex">
+        <CommentBox text="Child 1" isSelected={false} width="25%" />
+        <CommentBox text="Child 2" isSelected={false} width="25%" />
+        <CommentBox text="Child 3" isSelected={false} width="25%" />
+        <CommentBox text="Child 4" isSelected={false} width="25%" />
+      </div>
     </div>
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
-  try {
-    const res = await fetch('https://mlipman-likelylogs.web.val.run/');
-    const logData: LogData = await res.json();
-    return { props: { logData } };
-  } catch (error) {
-    console.error('Failed to fetch log data:', error);
-    return { props: { logData: { food: [], fitness: [], meditation: [], general: [], test: [] } } };
-  }
-};
-
-
-const Home: FC<{logData: LogData}> = ({logData}) => {
-  const categories = [
-    { key: "food", display: "Food Entries" },
-    { key: "fitness", display: "Fitness Entries" },
-    { key: "meditation", display: "Meditation Entries" },
-    { key: "general", display: "General Entries" },
-    { key: "test", display: "Test Entries" },
-  ];
-  return (
-    <div>
-      <h1> My Journal</h1>
-      <h2>deploying to vercel, trying again</h2>
-      {categories.map((category, index) => (
-        <LogEntryList 
-          entries={logData[category.key]} 
-          title={category.display} 
-          key={index} 
-          />
-      ))}
-    </div>
-  );
-};
 
 export default Home;
