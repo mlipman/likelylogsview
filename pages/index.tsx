@@ -1,4 +1,6 @@
 import { FC, useState } from "react";
+import { GetServerSideProps } from "next";
+
 
 interface Comment {
   id: string;
@@ -6,9 +8,14 @@ interface Comment {
   children?: Comment[];
 }
 
-const Home: FC<{}> = ({}) => {
-  return <CommentTreeView />;
+interface HomeProps {
+  comments: Comment[];
+}
+
+const Home: FC<HomeProps> = ({ comments }) => {
+  return <CommentTreeView comments={comments} />;
 };
+
 
 interface CommentBoxProps {
   text: string;
@@ -16,12 +23,21 @@ interface CommentBoxProps {
   onClick: () => void;
 }
 
+const truncateText = (text: string): string => {
+  const words = text.split(' ');
+  if (words.length > 200) {
+    return words.slice(0, 200).join(' ') + '...';
+  }
+  return text;
+};
+
 const CommentBox: FC<CommentBoxProps> = ({ text, isSelected, onClick }) => (
   <div
     onClick={onClick}
-    className={`p-4 m-2 border rounded cursor-pointer ${isSelected ? "bg-blue-100" : "bg-gray-100"}  h-full`}
+    className={`p-4 m-2 border rounded cursor-pointer ${isSelected ? "bg-blue-100" : "bg-gray-100"}  h-full overflow-auto`}
+    style={{ maxHeight: '300px' }}
   >
-    {text}
+    <div className="prose" dangerouslySetInnerHTML={{ __html: truncateText(text) }} />
   </div>
 );
 
@@ -44,67 +60,73 @@ const CommentRow: FC<CommentRowProps> = ({ comments }) => {
 
   return (
     <div className="w-full">
-    <div className="flex flex-row w-full">
-      {orderedComments.map((comment) => (
-      <div 
-        key={comment.id} 
-        className="flex-grow"
-        style={{ flexGrow: rowSelectionId === comment.id ? 2 : 1, flexBasis: 0 }}
-      >
-        <CommentBox
-          text={comment.id}
-          isSelected={rowSelectionId === comment.id}
-          onClick={() => handleClick(comment.id)}
-        />
+      <div className="flex flex-row w-full">
+        {comments.slice(0,3).map((comment) => (
+          <div
+            key={comment.id}
+            className="flex-grow"
+            style={{
+              flexGrow: rowSelectionId === comment.id ? 3 : 1,
+              flexBasis: 0,
+            }}
+          >
+            <CommentBox
+              text={comment.text}
+              isSelected={rowSelectionId === comment.id}
+              onClick={() => handleClick(comment.id)}
+            />
+          </div>
+        ))}
       </div>
-      ))}
-    </div>
       {rowSelectionId && (
         <div className="w-full mt-2">
-          {comments.find(c => c.id === rowSelectionId)?.children && (
-            <CommentRow comments={comments.find(c => c.id === rowSelectionId)!.children!} />
+          {comments.find((c) => c.id === rowSelectionId)?.children && (
+            <CommentRow
+              comments={
+                comments.find((c) => c.id === rowSelectionId)!.children!
+              }
+            />
           )}
         </div>
       )}
-      </div>
-      );
-      };
-
-const CommentTreeView = () => {
-  const parents = [
-    {
-      id: "1",
-      text: "parent 1",
-      children: [
-        {
-          id: "1-1",
-          text: "Reply 2",
-          children: [
-            { id: "1-1-1", text: "Reply 2" },
-            { id: "1-1-2", text: "Reply 3" },
-            { id: "1-1-3", text: "Reply 4" },
-          ],
-        },
-        { id: "1-2", text: "Reply 3" },
-        { id: "1-3", text: "Reply 4" },
-      ],
-    },
-    {
-      id: "2",
-      text: "parent 1",
-      children: [
-        { id: "2-1", text: "Reply 2" },
-        { id: "2-2", text: "Reply 3" },
-        { id: "2-3", text: "Reply 4" },
-      ],
-    },
-  ];
-
-  return (
-    <div className="w-full max-w-4xl mx-auto">
-      <CommentRow comments={parents} />
     </div>
   );
+};
+
+const CommentTreeView: FC<{ comments: Comment[] }> = ({ comments }) => {
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <CommentRow comments={comments} />
+    </div>
+  );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const storyId = 41540902;
+
+  try {
+    const storyResponse = await fetch(`https://hacker-news.firebaseio.com/v0/item/${storyId}.json`);
+    const storyData = await storyResponse.json();
+    console.log(storyData);
+
+    const fetchComment = async (id: number): Promise<Comment> => {
+      const response = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+      const data = await response.json();
+      const children = await Promise.all((data.kids || []).map(fetchComment));
+      return {
+        id: data.id.toString(),
+        text: data.text || '',
+        children: children.length > 0 ? children : null
+      };
+    };
+
+    const comments = await Promise.all((storyData.kids || []).slice(0,100).map(fetchComment));
+
+    return { props: { comments } };
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return { props: { comments: [] } };
+  }
 };
 
 export default Home;
