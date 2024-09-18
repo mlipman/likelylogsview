@@ -52,7 +52,7 @@ const TourProgress = () => {
           <div key={boxIndex} className="mb-2">
             <h2 className="font-semibold">Checkpoint {boxIndex + 1}</h2>
             <div className="flex flex-wrap">
-              {Array(12).fill().map((_, i) => {
+              {Array(12).fill(false).map((_, i) => {
                 const checkboxIndex = boxIndex * 12 + i;
                 return (
                   <label key={i} className="mr-2 mb-1">
