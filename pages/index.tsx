@@ -1,5 +1,5 @@
-import { FC, useState, FormEvent, useEffect } from "react";
-import { useRouter } from "next/router";
+import {FC, useState, FormEvent, useEffect} from "react";
+import {useRouter} from "next/router";
 
 interface Comment {
   id: string;
@@ -20,11 +20,11 @@ const Home: FC = () => {
     if (storyIdFromQuery !== storyId) {
       setStoryId(storyIdFromQuery);
     }
-  }, [router.query.storyId]);
+  }, [router.query.storyId, storyId]);
 
   useEffect(() => {
     if (storyId !== null) {
-      router.push(`/?storyId=${storyId}`, undefined, { shallow: true });
+      router.push(`/?storyId=${storyId}`, undefined, {shallow: true});
       fetchComments(storyId);
     }
   }, [storyId]);
@@ -37,7 +37,7 @@ const Home: FC = () => {
       const storyData = await storyResponse.json();
 
       const fetchedComments = await Promise.all(
-        (storyData.kids || []).slice(0, 100).map(fetchComment),
+        (storyData.kids || []).slice(0, 100).map(fetchComment)
       );
       setComments(fetchedComments);
     } catch (error) {
@@ -51,7 +51,7 @@ const Home: FC = () => {
   // maybe some refactor opportunities to simplify the two fetch methods
   const fetchComment = async (id: number): Promise<Comment> => {
     const response = await fetch(
-      `https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+      `https://hacker-news.firebaseio.com/v0/item/${id}.json`
     );
     const data = await response.json();
     const children = await Promise.all((data.kids || []).map(fetchComment));
@@ -91,15 +91,17 @@ const truncateText = (text: string): string => {
   return text;
 };
 
-const CommentBox: FC<CommentBoxProps> = ({ text, isSelected, onClick }) => (
+const CommentBox: FC<CommentBoxProps> = ({text, isSelected, onClick}) => (
   <div
     onClick={onClick}
-    className={`p-4 m-2 border rounded cursor-pointer ${isSelected ? "bg-blue-100" : "bg-gray-100"}  h-full overflow-auto`}
-    style={{ maxHeight: "300px" }}
+    className={`p-4 m-2 border rounded cursor-pointer ${
+      isSelected ? "bg-blue-100" : "bg-gray-100"
+    }  h-full overflow-auto`}
+    style={{maxHeight: "300px"}}
   >
     <div
       className="prose"
-      dangerouslySetInnerHTML={{ __html: truncateText(text) }}
+      dangerouslySetInnerHTML={{__html: truncateText(text)}}
     />
   </div>
 );
@@ -108,7 +110,7 @@ interface CommentRowProps {
   comments: Comment[];
 }
 
-const CommentRow: FC<CommentRowProps> = ({ comments }) => {
+const CommentRow: FC<CommentRowProps> = ({comments}) => {
   const [rowSelectionId, setRowSelectionId] = useState<string | null>(null);
   const handleClick = (id: string) => {
     setRowSelectionId(id);
@@ -159,7 +161,7 @@ const CommentRow: FC<CommentRowProps> = ({ comments }) => {
 interface InputBoxProps {
   passThroughSubmit: (input: number | null) => void;
 }
-const InputBox: FC<InputBoxProps> = ({ passThroughSubmit }) => {
+const InputBox: FC<InputBoxProps> = ({passThroughSubmit}) => {
   const [input, setInput] = useState("");
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -190,7 +192,7 @@ const InputBox: FC<InputBoxProps> = ({ passThroughSubmit }) => {
   );
 };
 
-const CommentTreeView: FC<{ comments: Comment[] }> = ({ comments }) => {
+const CommentTreeView: FC<{comments: Comment[]}> = ({comments}) => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <CommentRow comments={comments} />

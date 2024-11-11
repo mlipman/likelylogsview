@@ -1,8 +1,8 @@
-import React, { FC, useState } from 'react';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import React, {FC, useState} from "react";
+import {Card, CardContent, CardFooter} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
 
 interface LogEntry {
   message: string;
@@ -16,33 +16,35 @@ const LogEntryList: FC<{ entries: LogEntry[];}> = ({
 */
 const LogEntryCard: FC<{}> = () => {
   const [logEntry, setLogEntry] = useState<LogEntry>({
-    message: '',
-    backend_info: ''
+    message: "",
+    backend_info: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setLogEntry(prev => ({ ...prev, [name]: value }));
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const {name, value} = e.target;
+    setLogEntry((prev) => ({...prev, [name]: value}));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/updateLogEntry', {
-        method: 'POST',
+      const response = await fetch("/api/updateLogEntry", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(logEntry),
       });
       if (response.ok) {
-        alert('Log entry updated successfully!');
+        alert("Log entry updated successfully!");
       } else {
-        throw new Error('Failed to update log entry');
+        throw new Error("Failed to update log entry");
       }
     } catch (error) {
-      console.error('Error updating log entry:', error);
-      alert('Failed to update log entry. Please try again.');
+      console.error("Error updating log entry:", error);
+      alert("Failed to update log entry. Please try again.");
     }
   };
 
@@ -52,7 +54,12 @@ const LogEntryCard: FC<{}> = () => {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
-              <label htmlFor="message" className="text-sm font-medium text-gray-700">Message</label>
+              <label
+                htmlFor="message"
+                className="text-sm font-medium text-gray-700"
+              >
+                Message
+              </label>
               <Textarea
                 id="message"
                 name="message"
@@ -64,7 +71,12 @@ const LogEntryCard: FC<{}> = () => {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="backend_info" className="text-sm font-medium text-gray-700">Backend Info</label>
+              <label
+                htmlFor="backend_info"
+                className="text-sm font-medium text-gray-700"
+              >
+                Backend Info
+              </label>
               <Input
                 type="text"
                 id="backend_info"
@@ -78,7 +90,9 @@ const LogEntryCard: FC<{}> = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">Save Changes</Button>
+            <Button type="submit" className="w-full">
+              Save Changes
+            </Button>
           </CardFooter>
         </form>
       </Card>
