@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 interface LogEntry {
-  // message: string;
-  // backend_info: string;
+  message: string;
+  backend_info: string;
 }
 
 /*
@@ -14,7 +14,7 @@ const LogEntryList: FC<{ entries: LogEntry[];}> = ({
   entries,
 }) => {
 */
-const LogEntryCard: FC<LogEntry> = () => {
+const LogEntryCard: FC<{}> = () => {
   const [logEntry, setLogEntry] = useState<LogEntry>({
     message: '',
     backend_info: ''
