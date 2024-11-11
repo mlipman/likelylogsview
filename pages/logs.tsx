@@ -11,7 +11,7 @@ const Coach: FC<MyThingProps> = ({ data }) => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Welcome 2 to MyThing Page</h1>
       <p className="mb-4">{data}</p>
-      <LogEntryCard message={""} backendInfo={""} />
+      <LogEntryCard />
     </div>
   );
 };
