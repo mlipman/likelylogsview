@@ -12,3 +12,6 @@ chuncks of work: fetch comments (not too hard)
 given fake data: display it
 start with a list of tweest sized comments
 display them in a row.
+--
+main source of truth is https://github.com/mlipman/likelylogsview which auto deploys to vercel likelylogsview.
+there were two replits pointing to that github (generalwebsites and likelylogs). we're going with general webistes. i will also try developing locallly, but i'll start with what was present in the genreal webistes replit.
