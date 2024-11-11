@@ -1,4 +1,4 @@
-import {FC, useState, FormEvent, useEffect} from "react";
+import {FC, useState, FormEvent, useEffect, useCallback} from "react";
 import {useRouter} from "next/router";
 
 interface Comment {
@@ -22,34 +22,8 @@ const Home: FC = () => {
     }
   }, [router.query.storyId, storyId]);
 
-  useEffect(() => {
-    if (storyId !== null) {
-      router.push(`/?storyId=${storyId}`, undefined, {shallow: true});
-      fetchComments(storyId);
-    }
-  }, [storyId]);
-
-  const fetchComments = async (storyId: number) => {
-    setIsLoading(true);
-    try {
-      const urlBase = "https://hacker-news.firebaseio.com/v0/item";
-      const storyResponse = await fetch(`${urlBase}/${storyId}.json`);
-      const storyData = await storyResponse.json();
-
-      const fetchedComments = await Promise.all(
-        (storyData.kids || []).slice(0, 100).map(fetchComment)
-      );
-      setComments(fetchedComments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      setComments([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // maybe some refactor opportunities to simplify the two fetch methods
-  const fetchComment = async (id: number): Promise<Comment> => {
+  const fetchComment = useCallback(async (id: number): Promise<Comment> => {
     const response = await fetch(
       `https://hacker-news.firebaseio.com/v0/item/${id}.json`
     );
@@ -60,7 +34,36 @@ const Home: FC = () => {
       text: data.text || "",
       children: children.length > 0 ? children : undefined,
     };
-  };
+  }, []);
+
+  const fetchComments = useCallback(
+    async (storyId: number) => {
+      setIsLoading(true);
+      try {
+        const urlBase = "https://hacker-news.firebaseio.com/v0/item";
+        const storyResponse = await fetch(`${urlBase}/${storyId}.json`);
+        const storyData = await storyResponse.json();
+
+        const fetchedComments = await Promise.all(
+          (storyData.kids || []).slice(0, 100).map(fetchComment)
+        );
+        setComments(fetchedComments);
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+        setComments([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchComment]
+  );
+
+  useEffect(() => {
+    if (storyId !== null) {
+      router.push(`/?storyId=${storyId}`, undefined, {shallow: true});
+      fetchComments(storyId);
+    }
+  }, [storyId, router, fetchComments]);
 
   const handleNewsIdSubmit = (incomingId: number | null) =>
     setStoryId(incomingId);
