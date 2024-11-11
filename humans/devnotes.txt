@@ -15,3 +15,11 @@ display them in a row.
 --
 main source of truth is https://github.com/mlipman/likelylogsview which auto deploys to vercel likelylogsview.
 there were two replits pointing to that github (generalwebsites and likelylogs). we're going with general webistes. i will also try developing locallly, but i'll start with what was present in the genreal webistes replit.
+--
+pages: coach, index, logs, tour
+index works. all its components are in the index.tsx file. hacker news stories. includes fetch and some styling.
+tour kinda works. uses libraries from recharts. some weird x/y stuff, but not super important.
+
+logs fails. imports components from components folder. that seems to rely on nextjs @ components which seem to be failing. maybe an install would fix.
+
+gonna try `npm install shadcn-ui` got get logs working. i expect that to update my package.json with one line and package-lock.json with a lot
