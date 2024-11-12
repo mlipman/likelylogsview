@@ -23,3 +23,7 @@ tour kinda works. uses libraries from recharts. some weird x/y stuff, but not su
 logs fails. imports components from components folder. that seems to rely on nextjs @ components which seem to be failing. maybe an install would fix.
 
 gonna try `npm install shadcn-ui` got get logs working. i expect that to update my package.json with one line and package-lock.json with a lot
+--
+lots of infra working. two goals for today:
+1. easily create logs. each log has a few pictures and a few paragraphs of text.
+2. coach. list of conversaionts. each conversation is a list of messages.
