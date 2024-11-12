@@ -122,7 +122,7 @@ export default function Logs() {
         {logs.map((log) => (
           <div key={log.id} className="border p-4 rounded-lg shadow">
             <p className="text-sm text-gray-500 mb-2">ID: {log.id}</p>
-            <p className="font-semibold">Content: {log.contents}</p>
+            <p className="font-semibold">Message: {log.contents}</p>
             {log.pic1 && (
               <>
                 <img
