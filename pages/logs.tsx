@@ -21,9 +21,7 @@ export default function Logs() {
         if (data.error) {
           setError(data.error);
         } else {
-          setError(
-            error instanceof Error ? error.message : "Failed to fetch logs"
-          );
+          setError("Failed to fetch logs");
         }
         setLogs([]);
         setLoading(false);
