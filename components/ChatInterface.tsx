@@ -1,16 +1,20 @@
 import React, {useState} from "react";
 import {Send} from "lucide-react";
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
 const ChatInterface = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage = {role: "user", content: input};
+    const userMessage: Message = {role: "user" as const, content: input};
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);

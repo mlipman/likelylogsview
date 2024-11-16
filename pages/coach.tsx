@@ -16,7 +16,7 @@ const Coach: FC<MyThingProps> = ({data}) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (_context) => {
   // Fetch your data here
   const data = "This is some server-side fetched data.";
 

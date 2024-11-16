@@ -120,11 +120,11 @@ const CommentRow: FC<CommentRowProps> = ({comments}) => {
   };
 
   // Reorder comments to put the selected one first
-  const orderedComments = [...comments].sort((a, b) => {
-    if (a.id === rowSelectionId) return -1;
-    if (b.id === rowSelectionId) return 1;
-    return 0;
-  });
+  // const orderedComments = [...comments].sort((a, b) => {
+  //   if (a.id === rowSelectionId) return -1;
+  //   if (b.id === rowSelectionId) return 1;
+  //   return 0;
+  // });
 
   return (
     <div className="w-full">

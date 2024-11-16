@@ -6,7 +6,7 @@ const TourProgress = () => {
   const [progress, setProgress] = useState(0);
   const [checkboxes, setCheckboxes] = useState(Array(36).fill(false));
 
-  const handleCheckboxChange = (index) => {
+  const handleCheckboxChange = (index: number) => {
     const newCheckboxes = [...checkboxes];
     newCheckboxes[index] = !newCheckboxes[index];
     setCheckboxes(newCheckboxes);
