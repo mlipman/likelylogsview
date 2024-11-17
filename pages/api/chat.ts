@@ -8,6 +8,9 @@ export default async function handler(
     return res.status(405).json({error: "Method not allowed"});
   }
 
+  // everytime a new message comes in. take the existing messages
+  // anc create a new conversation
+
   try {
     const {messages} = req.body;
 
@@ -18,7 +21,7 @@ export default async function handler(
         Authorization: `Bearer ${process.env.OPEN_AI_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // Updated model name
+        model: "gpt-4o-mini",
         messages: messages,
         temperature: 0.7,
         max_tokens: 1000,
@@ -34,7 +37,7 @@ export default async function handler(
     }
 
     return res.status(200).json({
-      message: data.choices[0].message.content,
+      content: data.choices[0].message.content,
     });
   } catch (error) {
     console.error("Error:", error);

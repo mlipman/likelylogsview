@@ -1,15 +1,24 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {Send} from "lucide-react";
+import {Message} from "../pages/coach"; // Importing Message type from coach.tsx
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
+interface ChatInterfaceProps {
+  initialMessages: Message[]; // Props to take in a list of messages
 }
 
-const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatInterface: React.FC<ChatInterfaceProps> = ({initialMessages}) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // this makes sure that if initialMessages changes due to things outside this
+  // component, such as its parent, then we still update state
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -40,7 +49,7 @@ const ChatInterface = () => {
         ...prev,
         {
           role: "assistant",
-          content: data.message,
+          content: data.content,
         },
       ]);
     } catch (error) {
@@ -57,9 +66,20 @@ const ChatInterface = () => {
     }
   };
 
+  const saveConversation = async () => {
+    console.log("raw", messages);
+    const conversationJson = JSON.stringify(messages);
+    console.log("Conversation JSON:", conversationJson);
+    await fetch("api/conversation", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({messageListJson: JSON.stringify(messages)}),
+    });
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] max-w-2xl mx-auto p-4">
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
+    <div className="flex flex-col h-full max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -69,7 +89,9 @@ const ChatInterface = () => {
                 : "bg-gray-100 mr-12"
             }`}
           >
-            {message.content}
+            <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+              {message.content}
+            </ReactMarkdown>
           </div>
         ))}
         {loading && (
@@ -79,14 +101,21 @@ const ChatInterface = () => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
+      <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your ee message..."
-          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Type your message..."
+          rows={3}
+          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-[60px] max-h-[200px]"
         />
+        <button
+          type="button"
+          onClick={saveConversation}
+          className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+        >
+          Save Conversation
+        </button>
         <button
           type="submit"
           disabled={loading}

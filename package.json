@@ -20,6 +20,7 @@
     "formidable": "^3.5.2",
     "lucide-react": "^0.441.0",
     "next": "^14.1.0",
+    "openai": "^4.72.0",
     "prisma": "^5.22.0",
     "react": "^18.2.0",
     "react-dom": "18.2.0",
