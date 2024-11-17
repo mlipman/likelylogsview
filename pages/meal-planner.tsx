@@ -1,11 +1,12 @@
-import {FC} from "react";
+import {FC, useState} from "react";
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import Image from "next/image";
 
 type Meal = {
-  title: string;
-  note: string;
+  contents: string;
+  pic1Id?: string;
 };
 
 type DayPlan = {
@@ -23,8 +24,12 @@ const weekData: DayPlan[] = [
   {
     dayName: "Monday",
     lunch: {
-      title: "Chicken Salad",
-      note: "Prep 15min\nWith **avocado**",
+      // contents: `🥪 Grilled cheese sandwich w/ tomato & side of fries
+      //         - Restaurant takeout portion
+      //         - Est. 690 calories (range: 550-850)
+      //         - Medium portion fries, white bread, likely buttered, melted white cheese`,
+      contents: "Candy and cheese fries",
+      pic1Id: "koahnvnx2x5xf6vzy4kk",
     },
     dinner: null,
     stats: {
@@ -36,8 +41,7 @@ const weekData: DayPlan[] = [
     dayName: "Tuesday",
     lunch: null,
     dinner: {
-      title: "stuff",
-      note: "asdfasdf asdf asdf",
+      contents: "asdfasdf asdf asdf",
     },
     stats: null,
   },
@@ -73,7 +77,56 @@ const weekData: DayPlan[] = [
   },
 ];
 
+// Add new Modal component
+const MealModal: FC<{meal: Meal; onClose: () => void}> = ({meal, onClose}) => {
+  const srcUrl = meal.pic1Id
+    ? `https://res.cloudinary.com/dllptigzk/image/upload/v1731521561/logs/${meal.pic1Id}.jpg`
+    : null;
+  const blurUrl = meal.pic1Id
+    ? `https://res.cloudinary.com/dllptigzk/image/upload/w_50,e_blur:100/v1731521561/logs/${meal.pic1Id}.jpg`
+    : null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white p-6 rounded-lg max-w-2xl w-full m-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ReactMarkdown
+          className="text-gray-600 mb-4"
+          remarkPlugins={[remarkBreaks]}
+        >
+          {meal.contents}
+        </ReactMarkdown>
+        {srcUrl && blurUrl && (
+          <Image
+            className="w-full rounded-lg"
+            src={srcUrl}
+            alt="Meal"
+            width={500}
+            height={500}
+            placeholder="blur"
+            blurDataURL={blurUrl}
+          />
+        )}
+        <button
+          className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Update MealBox component
 const MealBox: FC<{meal: Meal | null}> = ({meal}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   if (meal == null) {
     return (
       <div className="h-32 border rounded-lg p-3 bg-gray-50">
@@ -83,17 +136,25 @@ const MealBox: FC<{meal: Meal | null}> = ({meal}) => {
   }
 
   return (
-    <div className="h-32 border rounded-lg p-3 bg-white">
-      <h3 className="font-semibold text-lg mb-2">{meal.title}</h3>
-      <ReactMarkdown
-        className="text-sm text-gray-600"
-        remarkPlugins={[remarkBreaks]}
+    <>
+      <div
+        className="h-32 border rounded-lg p-3 bg-white cursor-pointer hover:bg-gray-50"
+        onClick={() => setIsModalOpen(true)}
       >
-        {meal.note}
-      </ReactMarkdown>
-    </div>
+        <ReactMarkdown
+          className="text-sm text-gray-600"
+          remarkPlugins={[remarkBreaks]}
+        >
+          {meal.contents}
+        </ReactMarkdown>
+      </div>
+      {isModalOpen && (
+        <MealModal meal={meal} onClose={() => setIsModalOpen(false)} />
+      )}
+    </>
   );
 };
+
 const DayColumn: FC<{dayPlan: DayPlan}> = ({dayPlan}) => {
   return (
     <div className="flex-1 min-w-0">
