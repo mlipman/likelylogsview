@@ -1,6 +1,6 @@
 import type {NextApiRequest, NextApiResponse} from "next";
 import OpenAI from "openai";
-import {ChatCompletion, CompletionChoice} from "openai/resources";
+// import {ChatCompletion} from "openai/resources";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -49,11 +49,12 @@ export default async function handler(
     // new:
     // messges have a role and content.
     // choice has a message which has a role and contnet
-    const completion: ChatCompletion = await client.chat.completions.create({
+    // const completion: ChatCompletion =
+    await client.chat.completions.create({
       messages: [{role: "user", content: "Say this is a test"}],
       model: "gpt-3.5-turbo",
     });
-    const a = completion.choices[0].message.content;
+    // const a = completion.choices[0].message.content;
 
     if (!response.ok) {
       throw new Error(
