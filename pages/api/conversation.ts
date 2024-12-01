@@ -11,7 +11,7 @@ export default async function handler(
     const {messageListJson} = req.body;
     const conversation = await prisma.conversation.create({
       data: {
-        messageListJson,
+        message_list_json: messageListJson, // not sure if works
       },
     });
     return res.status(201).json(conversation);

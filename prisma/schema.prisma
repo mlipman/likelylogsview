@@ -16,25 +16,20 @@ datasource db {
   url      = env("DEV_DB_URL")
 }
 
-model Person {
+model log {
   id Int @id @default(autoincrement())
-  name String
-  age Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Log {
-  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
   contents String
-  pic1 String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  pic_id1 String?
+  pic_id2 String?
+  pic_id3 String?
+  position Int? @unique
 }
 
-model Conversation {
+model conversation {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  messageListJson String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  message_list_json String
 }
