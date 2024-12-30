@@ -40,7 +40,7 @@ const Coach: FC<MyThingProps> = ({data}) => {
       <h1 className="text-2xl font-bold mb-4">Welcome 2 to MyThing Page</h1>
       <p className="mb-4">{data}</p>
       <div className="mb-4">
-        {[6, 7, 8, 9, 10].map((num) => (
+        {[1, 7, 8, 9, 10].map((num) => (
           <button
             key={num}
             onClick={() => fetchConversation(num)}
