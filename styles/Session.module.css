@@ -1,0 +1,50 @@
+.container {
+  @apply h-screen flex flex-col p-4 max-w-4xl mx-auto;
+}
+
+.header {
+  @apply text-2xl font-semibold text-gray-800 mb-1;
+}
+
+.subheader {
+  @apply text-sm text-gray-500 mb-4 font-light;
+}
+
+.contextArea {
+  @apply mb-6 w-full;
+}
+
+.contextTextarea {
+  @apply w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+  text-gray-800 bg-gray-50 resize-none h-48;
+}
+
+.chatContainer {
+  @apply flex-1 flex flex-col min-h-0;
+}
+
+.messagesArea {
+  @apply flex-1 overflow-y-auto space-y-4 min-h-0;
+}
+
+.messageUser {
+  @apply p-4 rounded-lg bg-blue-50 ml-12 border border-blue-100;
+}
+
+.messageAssistant {
+  @apply p-4 rounded-lg bg-gray-50 mr-12 border border-gray-200;
+}
+
+.inputArea {
+  @apply mt-4 flex gap-2;
+}
+
+.inputTextarea {
+  @apply flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+  resize-none min-h-[60px] max-h-[200px] bg-white;
+}
+
+.sendButton {
+  @apply p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300
+  transition-colors duration-200 flex items-center justify-center min-w-[50px];
+}
