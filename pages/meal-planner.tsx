@@ -200,6 +200,14 @@ const MealModal: FC<{
                 <p className="text-sm text-gray-500 mt-1">
                   {`position ${position}`}
                 </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  <a
+                    href={`/onelog?id=${meal.id}`}
+                    className="text-blue-500 hover:underline"
+                  >
+                    log page
+                  </a>
+                </p>
               </>
             ) : (
               <>
