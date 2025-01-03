@@ -6,6 +6,7 @@
 
 // `npx prisma db push` to update db then
 // `npx prisma generate`
+// restart npm run dev after db changes
 
 generator client {
   provider = "prisma-client-js"
@@ -32,4 +33,12 @@ model conversation {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   message_list_json String
+}
+
+model session {
+  instance String @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  message_list_json String
+  context_json String
 }

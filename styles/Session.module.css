@@ -28,7 +28,7 @@
 }
 
 .messageUser {
-  @apply p-4 rounded-lg bg-blue-50 ml-12 border border-blue-100;
+  @apply relative p-4 rounded-lg bg-blue-50 ml-12 border border-blue-100;
 }
 
 .messageAssistant {
@@ -47,4 +47,8 @@
 .sendButton {
   @apply p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300
   transition-colors duration-200 flex items-center justify-center min-w-[50px];
+}
+
+.smallCornerButton {
+  @apply absolute top-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded;
 }
