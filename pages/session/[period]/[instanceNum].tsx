@@ -7,7 +7,7 @@ import {useRouter} from "next/router";
 import {makeHeader} from "@/utils/dateHeader";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -29,23 +29,51 @@ const InstanceSession: FC = () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {role: "user", content: input};
+    const systemMessage: Message = {role: "system", content: context.data};
+    const originalMessages = [...messages];
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setMessageLoading(true);
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messagesWithContext: [
+            systemMessage,
+            ...originalMessages,
+            userMessage,
+          ],
+        }),
+      });
 
-    // Add fake response
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "This is a simulated response. The *actual* API integration will be implemented later.",
-      },
-    ]);
-    setMessageLoading(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get response");
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.content,
+        },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, there was an error processing your request.",
+        },
+      ]);
+    } finally {
+      setMessageLoading(false);
+    }
   };
 
   // removes the message and the following one if it exists

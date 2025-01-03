@@ -12,7 +12,7 @@ export default async function handler(
   // anc create a new conversation
 
   try {
-    const {messages} = req.body;
+    const {messagesWithContext} = req.body;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -22,7 +22,7 @@ export default async function handler(
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        messages: messages,
+        messages: messagesWithContext,
         temperature: 0.7,
         max_tokens: 1000,
       }),
