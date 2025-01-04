@@ -4,7 +4,9 @@ import styles from "@/styles/Session.module.css";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import {useRouter} from "next/router";
-import {makeHeader} from "@/utils/dateHeader";
+import {childPages, makeHeader} from "@/utils/dates";
+import type {Period} from "@/utils/dates";
+import Link from "next/link";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -31,7 +33,7 @@ const InstanceSession: FC = () => {
     const userMessage: Message = {role: "user", content: input};
     const systemMessage: Message = {role: "system", content: context.data};
     const originalMessages = [...messages];
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setMessageLoading(true);
 
@@ -42,11 +44,7 @@ const InstanceSession: FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messagesWithContext: [
-            systemMessage,
-            ...originalMessages,
-            userMessage,
-          ],
+          messagesWithContext: [systemMessage, ...originalMessages, userMessage],
         }),
       });
 
@@ -56,7 +54,7 @@ const InstanceSession: FC = () => {
         throw new Error(data.error || "Failed to get response");
       }
 
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           role: "assistant",
@@ -64,7 +62,7 @@ const InstanceSession: FC = () => {
         },
       ]);
     } catch (error) {
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           role: "assistant",
@@ -78,11 +76,12 @@ const InstanceSession: FC = () => {
 
   // removes the message and the following one if it exists
   const removeMessage = async (index: number) => {
-    setMessages((prev) => [...prev.slice(0, index), ...prev.slice(index + 2)]);
+    setMessages(prev => [...prev.slice(0, index), ...prev.slice(index + 2)]);
   };
 
   const saveSession = useCallback(async () => {
     // add error handling
+    if (context.data === "" && messages.length === 0) return;
     setSaving(true);
     await fetch("/api/session", {
       method: "POST",
@@ -115,7 +114,7 @@ const InstanceSession: FC = () => {
     try {
       const response = await fetch(`/api/session?instance=${instance}`);
       if (!response.ok) {
-        setContext({data: "notfound"});
+        setContext({data: ""});
         setMessages([]);
       }
       const sessionData = await response.json();
@@ -143,6 +142,13 @@ const InstanceSession: FC = () => {
     );
   }
 
+  const row1Links = childPages(period as Period, instanceNum as string);
+  // if month: 4 or 5 links. week x, x+1.. .
+  // if week, 7 links (2 lines?), one per day.
+
+  // also three links for previous, home, and next
+  // and one to go up a level
+
   return (
     <div className={styles.container}>
       <h1 className={styles.header}>{header}</h1>
@@ -154,7 +160,7 @@ const InstanceSession: FC = () => {
         <div className="relative">
           <textarea
             value={context.data}
-            onChange={(e) => setContext({data: e.target.value})}
+            onChange={e => setContext({data: e.target.value})}
             className={styles.contextTextarea}
             placeholder="Enter context here..."
           />
@@ -171,15 +177,21 @@ const InstanceSession: FC = () => {
         </div>
       </div>
 
+      <div className={styles.boxGrid}>
+        {row1Links.map((row1link, index) => (
+          <Link href={row1link.url} className={styles.boxLink} key={index}>
+            {row1link.title}
+          </Link>
+        ))}
+      </div>
+
       <div className={styles.chatContainer}>
         <div className={styles.messagesArea}>
           {messages.map((message, index) => (
             <div
               key={index}
               className={
-                message.role === "user"
-                  ? styles.messageUser
-                  : styles.messageAssistant
+                message.role === "user" ? styles.messageUser : styles.messageAssistant
               }
             >
               <button
@@ -203,7 +215,7 @@ const InstanceSession: FC = () => {
         <div className={styles.inputArea}>
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message... (Cmd + Enter to send)"
             className={styles.inputTextarea}

@@ -52,3 +52,13 @@
 .smallCornerButton {
   @apply absolute top-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded;
 }
+
+.boxGrid {
+  @apply grid grid-cols-4 gap-2 mb-6;
+}
+
+.boxLink {
+  @apply block py-2 px-1 bg-gray-50 rounded-lg border border-gray-200 
+  hover:bg-gray-100 transition-colors duration-200 text-center
+  text-gray-800 font-medium cursor-pointer text-sm whitespace-nowrap;
+}
