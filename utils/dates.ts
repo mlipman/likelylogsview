@@ -110,6 +110,9 @@ export const childPages = (
   // first week is as follows
   // M:
   // }
+
+  // want real child pages. also home and parent
+
   const previous = subtractOne(period, instanceNum);
   const next = addOne(period, instanceNum);
   return [

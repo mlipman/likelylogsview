@@ -1,4 +1,4 @@
-import React, {FC, useState} from "react";
+import React, {FC} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import Image from "next/image";
@@ -10,10 +10,7 @@ const Log: FC<{meal: log}> = ({meal}) => {
   return (
     <div>
       <>
-        <ReactMarkdown
-          className="text-gray-600 mb-4"
-          remarkPlugins={[remarkBreaks]}
-        >
+        <ReactMarkdown className="text-gray-600 mb-4" remarkPlugins={[remarkBreaks]}>
           {meal.contents}
         </ReactMarkdown>
         {imageUrls && (

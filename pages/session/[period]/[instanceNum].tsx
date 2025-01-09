@@ -1,4 +1,4 @@
-import {FC, useState, KeyboardEvent, useEffect, useCallback} from "react";
+import {FC, useState, KeyboardEvent, useEffect} from "react";
 import {Send} from "lucide-react";
 import styles from "@/styles/Session.module.css";
 import ReactMarkdown from "react-markdown";
@@ -53,14 +53,13 @@ const InstanceSession: FC = () => {
       if (!response.ok) {
         throw new Error(data.error || "Failed to get response");
       }
-
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.content,
-        },
-      ]);
+      const responseMessage: Message = {
+        role: "assistant",
+        content: data.content,
+      };
+      const newMessages = [...originalMessages, userMessage, responseMessage];
+      setMessages(newMessages);
+      await saveSession(newMessages);
     } catch (error) {
       setMessages(prev => [
         ...prev,
@@ -79,27 +78,24 @@ const InstanceSession: FC = () => {
     setMessages(prev => [...prev.slice(0, index), ...prev.slice(index + 2)]);
   };
 
-  const saveSession = useCallback(async () => {
+  const saveSession = async (messagesToSave: Message[] = messages) => {
     // add error handling
-    if (context.data === "" && messages.length === 0) return;
+    if (context.data === "" && messagesToSave.length === 0) return;
     setSaving(true);
-    await fetch("/api/session", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        instance: `${period}${instanceNum}`,
-        message_list_json: JSON.stringify(messages),
-        context_json: JSON.stringify(context),
-      }),
-    });
-    setSaving(false);
-  }, [period, instanceNum, messages, context]);
-
-  useEffect(() => {
-    if (!pageLoading) {
-      saveSession();
+    try {
+      await fetch("/api/session", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          instance: `${period}${instanceNum}`,
+          message_list_json: JSON.stringify(messagesToSave),
+          context_json: JSON.stringify(context),
+        }),
+      });
+    } finally {
+      setSaving(false);
     }
-  }, [messages, saveSession, pageLoading]);
+  };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -108,7 +104,6 @@ const InstanceSession: FC = () => {
     }
   };
 
-  // todo tomorrow: post session, integrate with chatgpt api
   const fetchSession = async (instance: string) => {
     setPageLoading(true);
     try {
