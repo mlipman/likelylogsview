@@ -27,16 +27,11 @@ const InstanceSession: FC = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = {role: "user", content: input};
-    const systemMessage: Message = {role: "system", content: context.data};
-    const originalMessages = [...messages];
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setMessageLoading(true);
-
+  const getAIResponse = async (
+    systemMessage: Message,
+    originalMessages: Message[],
+    userMessage: Message
+  ): Promise<Message> => {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -53,29 +48,57 @@ const InstanceSession: FC = () => {
       if (!response.ok) {
         throw new Error(data.error || "Failed to get response");
       }
-      const responseMessage: Message = {
+
+      return {
         role: "assistant",
         content: data.content,
       };
-      const newMessages = [...originalMessages, userMessage, responseMessage];
-      setMessages(newMessages);
-      await saveSession(newMessages);
     } catch (error) {
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, there was an error processing your request.",
-        },
-      ]);
-    } finally {
-      setMessageLoading(false);
+      return {
+        role: "assistant",
+        content: `Sorry, there was an error processing your request: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
   };
 
-  // removes the message and the following one if it exists
+  const handleSubmit = async () => {
+    if (!input.trim()) return;
+    const askChat = true;
+
+    const userMessage: Message = {role: "user", content: input};
+    const originalMessages = [...messages];
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+
+    let messages_to_add: Message[] = [];
+
+    if (askChat) {
+      setMessageLoading(true);
+      const systemMessage: Message = {role: "system", content: context.data};
+      const aiResponse = await getAIResponse(
+        systemMessage,
+        originalMessages,
+        userMessage
+      );
+      messages_to_add = [aiResponse];
+      setMessageLoading(false);
+    }
+
+    const newMessages = [...originalMessages, userMessage, ...messages_to_add];
+    setMessages(newMessages);
+    await saveSession(newMessages);
+  };
+
+  // removes the message and the following assistant message if it exists
   const removeMessage = async (index: number) => {
-    setMessages(prev => [...prev.slice(0, index), ...prev.slice(index + 2)]);
+    setMessages(prev => {
+      const nextMessage = prev[index + 1];
+
+      if (nextMessage && nextMessage.role === "assistant") {
+        return [...prev.slice(0, index), ...prev.slice(index + 2)];
+      }
+      return [...prev.slice(0, index), ...prev.slice(index + 1)];
+    });
   };
 
   const saveSession = async (messagesToSave: Message[] = messages) => {

@@ -121,6 +121,10 @@ export const childPages = (
       url: `/session/${previous.period}/${previous.instanceNum}`,
     },
     {
+      title: "Home",
+      url: "/",
+    },
+    {
       title: "Next",
       url: `/session/${next.period}/${next.instanceNum}`,
     },
