@@ -5,20 +5,21 @@ interface Message {
   content: string;
 }
 
-interface OpenAIResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
+interface AnthropicResponse {
+  content: Array<{
+    text: string;
   }>;
   error?: {
     message: string;
   };
 }
 
-interface AnthropicResponse {
-  content: Array<{
-    text: string;
+/*
+interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
   }>;
   error?: {
     message: string;
@@ -50,6 +51,7 @@ async function fetchOpenAIResponse(
 
   return data;
 }
+*/
 
 async function fetchAnthropicResponse(
   messagesWithContext: Message[]
