@@ -45,7 +45,7 @@
 .inputTextarea {
   @apply w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
   resize-none min-h-[100px] max-h-[200px] bg-white;
-  margin-bottom: env(safe-area-inset-bottom, 10px);
+  margin-bottom: env(safe-area-inset-bottom, 60px);
 }
 
 .sendButton {
