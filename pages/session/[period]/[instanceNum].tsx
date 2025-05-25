@@ -25,7 +25,7 @@ const InstanceSession: FC = () => {
   const [input, setInput] = useState("");
   const [messageLoading, setMessageLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [_, setSaving] = useState(false);
   const [askChat, setAskChat] = useState(false);
 
   const getAIResponse = async (
