@@ -174,26 +174,6 @@ const InstanceSession: FC = () => {
         {period}
         {instanceNum}
       </h2>
-      <div className={styles.contextArea}>
-        <div className="relative">
-          <textarea
-            value={context.data}
-            onChange={e => setContext({data: e.target.value})}
-            className={styles.contextTextarea}
-            placeholder="Enter context here..."
-          />
-          {saving ? (
-            <div className={styles.smallCornerButton}>Saving...</div>
-          ) : (
-            <button
-              onClick={() => saveSession()}
-              className={`${styles.smallCornerButton} cursor-pointer`}
-            >
-              Save
-            </button>
-          )}
-        </div>
-      </div>
 
       <div className={styles.boxGrid}>
         {row1Links.map((row1link, index) => (
