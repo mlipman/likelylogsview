@@ -208,32 +208,32 @@ const InstanceSession: FC = () => {
               <div className="animate-pulse">Thinking...</div>
             </div>
           )}
-        </div>
 
-        <div className={styles.controlsArea}>
-          <button
-            onClick={() => setAskChat(!askChat)}
-            className={`${styles.feedbackToggle} ${askChat ? styles.feedbackToggleActive : ""}`}
-          >
-            {askChat ? "✓ Getting External Feedback" : "+ Get External Feedback"}
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={messageLoading}
-            className={styles.sendButton}
-          >
-            <Send size={20} />
-            <span className={styles.sendButtonText}>Send</span>
-          </button>
-        </div>
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message... (Cmd + Enter to send)"
+            className={styles.inputTextarea}
+          />
 
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message... (Cmd + Enter to send)"
-          className={styles.inputTextarea}
-        />
+          <div className={styles.controlsArea}>
+            <button
+              onClick={() => setAskChat(!askChat)}
+              className={`${styles.feedbackToggle} ${askChat ? styles.feedbackToggleActive : ""}`}
+            >
+              {askChat ? "✓ Getting External Feedback" : "+ Get External Feedback"}
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={messageLoading}
+              className={styles.sendButton}
+            >
+              <Send size={20} />
+              <span className={styles.sendButtonText}>Send</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
