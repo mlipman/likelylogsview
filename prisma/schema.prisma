@@ -42,3 +42,14 @@ model session {
   message_list_json String
   context_json String
 }
+
+model photo_log {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title String
+  description String?
+  pic_id String
+  tags String?
+  location String?
+}
