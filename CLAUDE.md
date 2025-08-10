@@ -9,35 +9,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Start production server**: `npm start`
 - **Lint code**: `npm run lint`
 - **Format code**: `npm run format`
-- **Database operations**: 
+- **Database operations**:
   - `npx prisma db push` to update database schema
   - `npx prisma generate` to regenerate Prisma client
   - Always restart `npm run dev` after database changes
 
 ## Architecture Overview
 
-This is a Next.js application with a PostgreSQL database using Prisma ORM. The app appears to be a logging/journaling system with AI chat capabilities.
+This is a Next.js application with a PostgreSQL database using Prisma ORM.
+The current focus for this development session is the cooking app including the pages and api endpoints under /cooking
 
 ### Key Components:
-- **Database Models**: `log`, `conversation`, `session` (defined in `prisma/schema.prisma`)
-- **API Routes**: Located in `pages/api/` including logs, chat, photos, conversation endpoints
-- **Frontend Pages**: Session-based navigation (`/session/[period]/[instanceNum]`), logs view, coach chat
+
+- **Database Models**: to be added / changed
+- **API Routes**: Located in `pages/api/`
 - **Image Handling**: Cloudinary integration for photo uploads and storage
 
-### Core Functionality:
-- **Logging System**: Users can create logs with text content and optional images
-- **AI Chat Interface**: ChatInterface component for conversational interactions with OpenAI
-- **Session Management**: Time-based sessions (day/week/month) with instance numbers
-- **Image Processing**: Cloudinary for image storage with blur placeholders and URL generation
-
 ### Important Patterns:
+
 - Database connection uses Prisma Client (`lib/prisma.ts`)
 - Image utilities handle Cloudinary URL generation (`utils/imageUtils.ts`)
-- Date utilities manage session periods and instance numbers (`utils/dates.ts`)
 - API endpoints follow RESTful patterns with proper error handling
 - TypeScript strict mode enabled with comprehensive type checking
 
 ### Environment Variables Required:
+
 - `DEV_DB_URL`: PostgreSQL database connection string
 - `OPEN_AI_KEY`: OpenAI API key for chat functionality
 - Cloudinary configuration for image handling
+
+### Important Context:
+
+I (michael) am a software engineer who cares deeply about clean code, especially on data model and business logic.
+I'm not super familiar with typescript, but it's very important to me that we adhere strictly to using types basically everywhere.
+The data model in terms of db tables is also super important to me and I will be reviewing every model and every field deeply.
+I want to develop this project with AI coding tools like claude code to make adding new pages and routine functionality much faster,
+but I still want to have a deep understanding of the theory of the product in the Peter Naur sense of programming as theory building.
+For front-end styling and layout, I'm totally happy to vibe code and leave that to the coding agent.
+This app should work well on both phone and laptop. It should look very nice and professional with a high effort clean looking aestecic design,
+but nothing over the top like parallax scrolling or silly effects. Functional and pleasant to use and look at.
+This app is a personal project meant to be used only by me.
