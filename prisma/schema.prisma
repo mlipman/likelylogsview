@@ -53,3 +53,124 @@ model photo_log {
   tags String?
   location String?
 }
+
+// Cooking app models
+// suffix _md means markdown text
+
+model Week {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  year Int
+  week Int
+  //start_date DateTime // Saturday of the week
+  //end_date DateTime   // Friday of the week
+  
+  shops Shop[]
+  preps Prep[]
+  cooks Cook[]
+  starting_status StartingStatus?
+  
+  @@unique([year, week])
+}
+
+model Recipe {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title String
+  content_md String?
+  source String?
+  url String?
+  
+  cooks Cook[] // Recipes can be used by multiple cooks
+}
+
+model Project {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title String
+  content_md String?
+  source String?
+  url String?
+  
+  preps Prep[] // Projects can be used by multiple preps
+}
+
+model Shop {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  week_id Int
+  occurred_at DateTime?
+  
+  // Planning phase data
+  planned_items_text String? // Shopping list as text
+  planning_notes String? // Chat/notes during planning
+  
+  // Action phase data  
+  purchased_items_text String? // What was actually bought
+  store_name String?
+  total_cost Decimal?
+  receipt_pic_id String? // Cloudinary image ID
+  shopping_notes String? // How it went, substitutions made, etc.
+  
+  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
+}
+
+model Prep {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  week_id Int
+  project_id Int?
+  occurred_at DateTime?
+  
+  // Planning phase data
+  plan_md String? // May or may not match the project content
+  
+  // Action phase data
+  outcome_md String?
+  result_pic_ids String? // Comma-separated Cloudinary IDs
+  
+  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+}
+
+model Cook {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  week_id Int
+  recipe_id Int?
+  occurred_at DateTime?
+  
+  // Planning phase data
+  plan_md String? // May or may not match the recipe content
+  
+  // Action phase data
+  outcome_md String?
+  result_pic_ids String? // Comma-separated Cloudinary IDs
+  
+  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
+  recipe Recipe? @relation(fields: [recipe_id], references: [id], onDelete: SetNull)
+}
+
+model StartingStatus {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  week_id Int @unique
+  
+  // Carryover assets from previous weeks
+  carryover_items_md String? // Available ingredients/leftovers
+  
+  // Deficiencies in usual staples
+  missing_staples_md String? // Staples that are low/out
+  
+  // General notes about the week's starting state
+  notes_md String?
+  
+  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
+}

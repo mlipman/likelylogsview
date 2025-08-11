@@ -49,3 +49,22 @@ For front-end styling and layout, I'm totally happy to vibe code and leave that 
 This app should work well on both phone and laptop. It should look very nice and professional with a high effort clean looking aestecic design,
 but nothing over the top like parallax scrolling or silly effects. Functional and pleasant to use and look at.
 This app is a personal project meant to be used only by me.
+
+### ts Style:
+
+Here's a sample to match the linter.
+
+```
+      case "POST":
+        const {title, content_md, source, url} = req.body;
+        const newRecipe = await prisma.recipe.create({
+          data: {
+            title,
+            content_md,
+            source,
+            url,
+          },
+        });
+        res.status(201).json(newRecipe);
+        break;
+```
