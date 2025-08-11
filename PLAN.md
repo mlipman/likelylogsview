@@ -1,52 +1,76 @@
-our goal for today is to build out the cooking app functionality.
+# Project Status: Cooking App Database Migration
 
-the cooking app is called sgt chef (like a private chef that's been promoted)
-and the idea is to relieve a lot of the cognitive load that can make cooking and meal prep difficult.
-it comes at this with a few novel insights:
-first, an app that can access AI models can do way more with natural language and semi-structured data compared with
-applications from a few years ago that relied on strict rules for features like "what can i cook with the ingredients in my fridge"
-so a common user entry point can be as simple as "what should i cook"
-and then the app will fetch a bunch of contextual info about the user's current state of ingredients and recipes and preferences,
-send it to an llm and get back a list of options. each option might be a on-the-fly created recipe or a choice from a pre-created list
-the user can browse the choices, select one and optionally provide natural language feedback to refine that.
-at some point, the user will move from planning mode to active mode, which in this case means they start cooking.
-the main interaction at this point is to let the user record the results, so for cooking a meal this means text or images about what they made
-how it went and if they liked it.
+## Completed Tasks
 
-so in sum, this app will store semi-structured data. support interactions where that data is fetched and sent to an llm for other semi-structured output.
-let the user interact with that output and the llm.
+### Database Schema Update
 
-the user has two main modes: plan and act. plan is browsing and chatting to decide what they want to do. act is doing it and recording how it went.
+- **Schema Migration**: Successfully updated Prisma schema to use simplified field structure
+  - Replaced complex field names with `content_md`, `source`, `url` for Recipe/Project models
+  - Changed Week model from `start_date/end_date` to `year/week` fields
+  - Renamed all content fields to use `_md` suffix for markdown (e.g., `plan_md`, `outcome_md`)
+  - Updated relationships to match new field structure
 
-the plan and act paradigm exists across three main functions: Shop, Prep, and Cook.
+### API Endpoints Refactored
 
-Shop is going to the store and buying groceries. the output of plan is a shopping list. the output of act is a Shop, ie having bought a bunch of groceries.
-Prep is doing a cooking project that produces ingredients to be used at another time. the output of plan is essentially a recipe, or a list of ingredients, steps, and techiniques.
-the output of act is basically an ingredient that can be used to cook a meal.
-Cook is producing a meal to be eaten. the output of plan could be a traditional recipe with very defined ingredients and times etc or a no-recipe-recipe,
-where it's general techniques and suggestions. the output of act is the meal, recorded as pictures or text about how it tasted etc.
+- **Code Structure**: Refactored all cooking API endpoints to use separate handler functions
+  - `cooks.ts`: Separated into `handleGet`, `handlePost`, `handlePut` functions
+  - `preps.ts`: Same refactoring approach, updated field mappings
+  - `recipes.ts`: Updated to use new `content_md`, `source`, `url` fields
+  - `projects.ts`: Updated to use new `content_md`, `source`, `url` fields
+  - `starting-status.ts`: Updated to use `*_md` field naming convention
+  - `suggest.ts`: Fixed field references and return statement issues
+  - `weeks.ts`: Updated to use `year`, `week` instead of date fields
 
-there are broadly two types of ~models - ones that are long lived and ones that are tied to a week.
+### TypeScript Compliance
 
-Long Lived Models
-Staples: this will be hardcoded in the app as text, not recorded in the db because it will not frequently change.
-Recipes: at some point we will want easy ways to add new recipes. the simplest is just pasting/typing in a block of markdown text. future ideas: input a yt link or nyt cooking link and have the system auto expand it into a full fledged recipe.
-a Recipe is an input to a Cook. meaning it's something that will produce a meal to be eaten.
-whereas the anaolog for a Prep is a Project. A Project is similar to a Recipe but could be like make pizza dough, or roast some veggies, or braise a chuck roast.
+- **Type Safety**: All TypeScript errors resolved
+  - Fixed variable naming conflicts through function separation
+  - Updated all field references to match new schema
+  - Eliminated unused imports and variables
+  - All files now pass `npx tsc --noEmit` check
 
-so the long lived models are Recipes and Projects (plus a hard coded Staples textblock)
+## Current State
 
-maybe a future project will add in some sort of Reviews or Preferences model, but let's avoid that for now
+### Database
 
-Short Lived Models
-we will also have things that are tied to a specific week.
-Shop, Prep, and Cook are all things that are tied to a week. they will also have an occurred_at timestamp so we can be more specific,
-but the main operational unit of the program will be a week (Saturday throught Friday) so all Shops, Preps, and Cooks will be tied to exactly one week.
-As mentioned above, a Cook probably starts with a Recipe. Or some deriviative, maybe while you're in planning phase you're remixing multiple Recipes with
-notes and adjustments and chat messages to create a Cook Plan which is just text idk but maybe has some Cook devleopment_history which is a more verbose log
-of the recipes considered and chat messages. This does not have to be perfectly relational. I want to leverage the idea that we should store lots of data in free text
-and rely on our ability to use llms to process that if needed. I also have 0 problem duplicating the text from a Recipe onto a Cook in fact I prefer that to a
-very normalized paradigm where the Cook would only have a recipe_id. And in the same way a Prep has a connection to a Project.
-The last model that is tied to a week is a StartingStatus. This is a state of ingredients as of thursday or friday of the previous week that will inform
-the upcoming week. There are two main types of updates in a StartingStatus: carryover, ie leftover from shops, cooks or preps from the previous week or before
-that are still available. In other words extra assets that can be used. and secondly deficiencies which are staples that i usually have but am low or out of this week.
+- Schema is up-to-date with simplified field structure
+- All cooking tables are active and match API expectations
+- Ready for data operations with new field names
+
+### API Layer
+
+- All endpoints functional with proper TypeScript types
+- Consistent error handling and response formats
+- Clean separation of concerns with individual handler functions
+
+### Frontend
+
+- Basic cooking dashboard page exists but needs data integration
+- TypeScript errors resolved, ready for development
+
+## Next Steps
+
+### Immediate Development Priorities
+
+1. **Data Integration**: Connect frontend to actual API data
+2. **Week Management**: Implement week creation/selection functionality
+3. **Core Workflows**: Build out Shop/Prep/Cook record creation flows
+4. **Recipe/Project Management**: Add CRUD interfaces for recipes and projects
+
+## Architecture Notes
+
+### Data Flow
+
+- Week-based organization with `year/week` identifiers
+- Markdown content stored in `*_md` fields for rich formatting
+- Simple foreign key relationships between Week -> Shop/Prep/Cook
+- Optional relationships to Recipe/Project templates
+
+### Field Naming Convention
+
+- `*_md` suffix indicates markdown content fields
+- `occurred_at` for when activities actually happened
+- `plan_md` for planning phase content
+- `outcome_md` for results/completion content
+
+The cooking app database layer is now stable and ready for active development of user-facing features.
