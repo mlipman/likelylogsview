@@ -94,7 +94,9 @@ export default function CookingHome() {
                 <span className="text-2xl">🛒</span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800">Shop</h3>
+                <Link href="/cooking/shops">
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-blue-600 cursor-pointer transition-colors">Shop</h3>
+                </Link>
                 <p className="text-gray-600">Grocery shopping</p>
               </div>
             </div>
@@ -118,7 +120,9 @@ export default function CookingHome() {
                 <span className="text-2xl">🥘</span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800">Prep</h3>
+                <Link href="/cooking/preps">
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-orange-600 cursor-pointer transition-colors">Prep</h3>
+                </Link>
                 <p className="text-gray-600">Meal preparation</p>
               </div>
             </div>
@@ -142,17 +146,23 @@ export default function CookingHome() {
                 <span className="text-2xl">👨‍🍳</span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800">Cook</h3>
+                <Link href="/cooking/cooks">
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-red-600 cursor-pointer transition-colors">Cook</h3>
+                </Link>
                 <p className="text-gray-600">Making meals</p>
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <button className="w-full text-left px-4 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors">
-                Plan Meals
-              </button>
-              <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
-                Record Cooking
-              </button>
+              <Link href="/cooking/add-cook" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors">
+                  Plan New Cook
+                </button>
+              </Link>
+              <Link href="/cooking/cook-record" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
+                  Record Cooking
+                </button>
+              </Link>
             </div>
             <div className="text-sm text-gray-500">
               <p>This week: 5 meals planned</p>
@@ -163,7 +173,7 @@ export default function CookingHome() {
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <button
               onClick={handleCookingSuggestion}
               disabled={isLoading}
@@ -179,14 +189,27 @@ export default function CookingHome() {
               <span className="mr-2">📋</span>
               View Staples
             </Link>
-            <button className="flex items-center justify-center px-4 py-3 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition-colors">
+            <Link
+              href="/cooking/recipes"
+              className="flex items-center justify-center px-4 py-3 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition-colors"
+            >
               <span className="mr-2">📖</span>
               Browse Recipes
-            </button>
-            <button className="flex items-center justify-center px-4 py-3 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors">
+            </Link>
+            <Link
+              href="/cooking/projects"
+              className="flex items-center justify-center px-4 py-3 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors"
+            >
               <span className="mr-2">🛠️</span>
               View Projects
-            </button>
+            </Link>
+            <Link
+              href="/cooking/weeks"
+              className="flex items-center justify-center px-4 py-3 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors"
+            >
+              <span className="mr-2">📅</span>
+              Manage Weeks
+            </Link>
           </div>
         </div>
 

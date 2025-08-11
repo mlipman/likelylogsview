@@ -26,8 +26,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(201).json(newRecipe);
         break;
 
+      case "PUT":
+        const {id, title: updateTitle, content_md: updateContent, source: updateSource, url: updateUrl} = req.body;
+        const updatedRecipe = await prisma.recipe.update({
+          where: {id},
+          data: {
+            title: updateTitle,
+            content_md: updateContent,
+            source: updateSource,
+            url: updateUrl,
+          },
+        });
+        res.status(200).json(updatedRecipe);
+        break;
+
       default:
-        res.setHeader("Allow", ["GET", "POST"]);
+        res.setHeader("Allow", ["GET", "POST", "PUT"]);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {

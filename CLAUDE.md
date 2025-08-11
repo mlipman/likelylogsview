@@ -15,6 +15,7 @@ Our plan is in PLAN.md
   - `npx prisma db push` to update database schema
   - `npx prisma generate` to regenerate Prisma client
   - Always restart `npm run dev` after database changes
+  - **IMPORTANT**: Always ask permission before modifying database data via curl POST/PUT/DELETE commands
 
 ## Architecture Overview
 

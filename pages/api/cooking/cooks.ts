@@ -36,15 +36,12 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handlePut(req: NextApiRequest, res: NextApiResponse) {
-  const {id, week_id, recipe_id, occurred_at, plan_md, outcome_md, result_pic_ids} =
-    req.body;
+  const {id, occurred_at, plan_md, outcome_md, result_pic_ids} = req.body;
 
   const updatedCook = await prisma.cook.update({
     where: {id},
     data: {
-      week_id,
-      recipe_id,
-      occurred_at,
+      occurred_at: occurred_at ? new Date(occurred_at) : null,
       plan_md,
       outcome_md,
       result_pic_ids,

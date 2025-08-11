@@ -30,8 +30,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(201).json(newWeek);
         break;
 
+      case "PUT":
+        const {id, year: updateYear, week: updateWeek} = req.body;
+        const updatedWeek = await prisma.week.update({
+          where: {id},
+          data: {
+            year: updateYear,
+            week: updateWeek,
+          },
+        });
+        res.status(200).json(updatedWeek);
+        break;
+
       default:
-        res.setHeader("Allow", ["GET", "POST"]);
+        res.setHeader("Allow", ["GET", "POST", "PUT"]);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
