@@ -68,6 +68,12 @@ export default function CookDetail() {
     fetchCook();
   }, [id]);
 
+  useEffect(() => {
+    if (router.query.edit) {
+      setIsEditing(true);
+    }
+  }, [router.query.edit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
