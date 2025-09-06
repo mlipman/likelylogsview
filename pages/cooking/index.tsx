@@ -1,12 +1,47 @@
 // import { useRouter } from "next/router";
 import Link from "next/link";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {addDays, format, setISOWeek, startOfISOWeek} from "date-fns";
+
+interface Cook {
+  id: number;
+  recipe: {title: string} | null;
+  plan_md: string | null;
+  outcome_md: string | null;
+}
+
+interface Week {
+  id: number;
+  year: number;
+  week: number;
+  cooks: Cook[];
+}
 
 export default function CookingHome() {
   // const router = useRouter();
-  const [currentWeek, setCurrentWeek] = useState<string>("2024-01-13"); // Example date
+  const [weeks, setWeeks] = useState<Week[]>([]);
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [weekLoading, setWeekLoading] = useState(true);
   const [suggestion, setSuggestion] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchWeeks = async () => {
+      try {
+        const response = await fetch("/api/cooking/weeks");
+        const data = await response.json();
+        setWeeks(data);
+      } catch (error) {
+        console.error("Failed to fetch weeks:", error);
+      } finally {
+        setWeekLoading(false);
+      }
+    };
+
+    fetchWeeks();
+  }, []);
+
+  const currentWeek = weeks[currentWeekIndex];
 
   const handleCookingSuggestion = async () => {
     setIsLoading(true);
@@ -17,7 +52,7 @@ export default function CookingHome() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          week_id: 1, // Mock week ID for now
+          week_id: currentWeek ? currentWeek.id : 1,
           user_query: "What should I cook?",
         }),
       });
@@ -34,12 +69,11 @@ export default function CookingHome() {
     }
   };
 
-  const formatWeekRange = (startDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-
-    return `${start.toLocaleDateString("en-US", {month: "short", day: "numeric"})} - ${end.toLocaleDateString("en-US", {month: "short", day: "numeric"})}`;
+  const formatWeekRange = (week: Week) => {
+    const date = setISOWeek(new Date(week.year, 0, 4), week.week);
+    const start = addDays(startOfISOWeek(date), -2);
+    const end = addDays(start, 6);
+    return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
   };
 
   return (
@@ -55,35 +89,77 @@ export default function CookingHome() {
 
         {/* Week Selector */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Current Week</h2>
-              <p className="text-gray-600">{formatWeekRange(currentWeek)}</p>
+          {weekLoading ? (
+            <p className="text-gray-600">Loading week...</p>
+          ) : currentWeek ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Current Week</h2>
+                <p className="text-gray-600">{formatWeekRange(currentWeek)}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentWeekIndex(i => i + 1)}
+                  disabled={currentWeekIndex >= weeks.length - 1}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ← Prev
+                </button>
+                <button
+                  onClick={() => setCurrentWeekIndex(i => i - 1)}
+                  disabled={currentWeekIndex === 0}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next →
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const prev = new Date(currentWeek);
-                  prev.setDate(prev.getDate() - 7);
-                  setCurrentWeek(prev.toISOString().split("T")[0]);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={() => {
-                  const next = new Date(currentWeek);
-                  next.setDate(next.getDate() + 7);
-                  setCurrentWeek(next.toISOString().split("T")[0]);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-              >
-                Next →
-              </button>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-600 mb-2">No weeks found</p>
+              <Link href="/cooking/weeks/new" className="text-purple-600 hover:text-purple-800">
+                Add Week
+              </Link>
             </div>
-          </div>
+          )}
         </div>
+
+        {currentWeek && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Cooks This Week</h3>
+            {currentWeek.cooks.length === 0 ? (
+              <p className="text-gray-600">No cooks planned.</p>
+            ) : (
+              <ul className="space-y-4">
+                {currentWeek.cooks.map(cook => (
+                  <li key={cook.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="text-gray-800">
+                        {cook.recipe ? cook.recipe.title : "No recipe / Freestyle"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/cooking/cooks/${cook.id}`}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        View
+                      </Link>
+                      {!cook.outcome_md && (
+                        <Link
+                          href={`/cooking/cooks/${cook.id}?edit=1`}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          Record
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Main Functions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
