@@ -10,11 +10,25 @@ interface Cook {
   outcome_md: string | null;
 }
 
+interface Prep {
+  id: number;
+  project: {title: string} | null;
+  outcome_md: string | null;
+}
+
+interface Shop {
+  id: number;
+  store_name: string | null;
+  purchased_items_text: string | null;
+}
+
 interface Week {
   id: number;
   year: number;
   week: number;
   cooks: Cook[];
+  preps: Prep[];
+  shops: Shop[];
 }
 
 export default function CookingHome() {
@@ -125,40 +139,112 @@ export default function CookingHome() {
         </div>
 
         {currentWeek && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Cooks This Week</h3>
-            {currentWeek.cooks.length === 0 ? (
-              <p className="text-gray-600">No cooks planned.</p>
-            ) : (
-              <ul className="space-y-4">
-                {currentWeek.cooks.map(cook => (
-                  <li key={cook.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="text-gray-800">
-                        {cook.recipe ? cook.recipe.title : "No recipe / Freestyle"}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/cooking/cooks/${cook.id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        View
-                      </Link>
-                      {!cook.outcome_md && (
+          <>
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Cooks This Week</h3>
+              {currentWeek.cooks.length === 0 ? (
+                <p className="text-gray-600">No cooks planned.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {currentWeek.cooks.map(cook => (
+                    <li key={cook.id} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-800">
+                          {cook.recipe ? cook.recipe.title : "No recipe / Freestyle"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
                         <Link
-                          href={`/cooking/cooks/${cook.id}?edit=1`}
-                          className="text-green-600 hover:text-green-800"
+                          href={`/cooking/cooks/${cook.id}`}
+                          className="text-blue-600 hover:text-blue-800"
                         >
-                          Record
+                          View
                         </Link>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                        {!cook.outcome_md && (
+                          <Link
+                            href={`/cooking/cooks/${cook.id}?edit=1`}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            Record
+                          </Link>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Preps This Week</h3>
+              {currentWeek.preps.length === 0 ? (
+                <p className="text-gray-600">No preps planned.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {currentWeek.preps.map(prep => (
+                    <li key={prep.id} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-800">
+                          {prep.project ? prep.project.title : "Prep Session"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/cooking/preps/${prep.id}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          View
+                        </Link>
+                        {!prep.outcome_md && (
+                          <Link
+                            href={`/cooking/preps/${prep.id}?edit=1`}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            Record
+                          </Link>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Shops This Week</h3>
+              {currentWeek.shops.length === 0 ? (
+                <p className="text-gray-600">No shopping trips planned.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {currentWeek.shops.map(shop => (
+                    <li key={shop.id} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-800">
+                          {shop.store_name || "Shopping Trip"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/cooking/shops/${shop.id}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          View
+                        </Link>
+                        {!shop.purchased_items_text && (
+                          <Link
+                            href={`/cooking/shops/${shop.id}?edit=1`}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            Record
+                          </Link>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
         )}
 
         {/* Main Functions Grid */}
@@ -177,15 +263,22 @@ export default function CookingHome() {
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <button className="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors">
-                Plan Shopping List
-              </button>
-              <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
-                Record Shopping Trip
-              </button>
+              <Link href="/cooking/shops/new" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors">
+                  Plan Shopping List
+                </button>
+              </Link>
+              <Link href="/cooking/shop-record" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
+                  Record Shopping Trip
+                </button>
+              </Link>
             </div>
             <div className="text-sm text-gray-500">
-              <p>This week: 2 trips planned</p>
+              <p>
+                This week: {currentWeek ? currentWeek.shops.length : 0} trip
+                {currentWeek && currentWeek.shops.length !== 1 ? "s" : ""} planned
+              </p>
             </div>
           </div>
 
@@ -203,15 +296,23 @@ export default function CookingHome() {
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <button className="w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors">
-                Plan Prep Project
-              </button>
-              <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
-                Record Prep Session
-              </button>
+              <Link href="/cooking/preps/new" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors">
+                  Plan Prep Project
+                </button>
+              </Link>
+              <Link href="/cooking/prep-record" className="w-full block">
+                <button className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors">
+                  Record Prep Session
+                </button>
+              </Link>
             </div>
             <div className="text-sm text-gray-500">
-              <p>This week: 1 project in progress</p>
+              <p>
+                This week: {currentWeek ? currentWeek.preps.length : 0} project
+                {currentWeek && currentWeek.preps.length !== 1 ? "s" : ""} in
+                progress
+              </p>
             </div>
           </div>
 
@@ -241,7 +342,10 @@ export default function CookingHome() {
               </Link>
             </div>
             <div className="text-sm text-gray-500">
-              <p>This week: 5 meals planned</p>
+              <p>
+                This week: {currentWeek ? currentWeek.cooks.length : 0} meal
+                {currentWeek && currentWeek.cooks.length !== 1 ? "s" : ""} planned
+              </p>
             </div>
           </div>
         </div>

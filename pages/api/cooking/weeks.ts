@@ -11,8 +11,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           orderBy: {created_at: "desc"},
           include: {
             shops: true,
-            preps: true,
-            cooks: true,
+            preps: {
+              include: {project: true},
+            },
+            cooks: {
+              include: {recipe: true},
+            },
             starting_status: true,
           },
         });
