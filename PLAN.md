@@ -1,3 +1,10 @@
+9/6: had codex make cook, plan, and shop more usable
+when loading page it now shows things for this week,
+
+small fixes: smoother loading exp, jumpy when this week is loaded
+better ux on this week and browsing weeks. nubmers vs dates
+when i click into a cook prep or shop and then go back i want an easy way to get back where i was
+--
 crud endpoints are working. lots of fake data and some bad links still on /cooking
 
 need more workflow focused UIs
