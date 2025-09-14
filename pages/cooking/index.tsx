@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useEffect, useState} from "react";
 import {addDays, format, setISOWeek, startOfISOWeek} from "date-fns";
+import {getCurrentWeek} from "../../utils/weekUtils";
 
 interface Cook {
   id: number;
@@ -34,10 +35,15 @@ interface Week {
 export default function CookingHome() {
   // const router = useRouter();
   const [weeks, setWeeks] = useState<Week[]>([]);
-  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [currentWeekIndex, setCurrentWeekIndex] = useState<number | null>(null);
   const [weekLoading, setWeekLoading] = useState(true);
   const [suggestion, setSuggestion] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [currentWeekData, setCurrentWeekData] = useState<{
+    year: number;
+    week: number;
+  } | null>(null);
+  const [isCreatingWeek, setIsCreatingWeek] = useState(false);
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -45,6 +51,24 @@ export default function CookingHome() {
         const response = await fetch("/api/cooking/weeks");
         const data = await response.json();
         setWeeks(data);
+
+        // Get current week according to Saturday-Friday rule
+        const currentWeek = getCurrentWeek();
+        setCurrentWeekData(currentWeek);
+
+        // Find if current week exists in data
+        const currentWeekRecord = data.find(
+          (week: Week) => week.year === currentWeek.year && week.week === currentWeek.week
+        );
+
+        if (currentWeekRecord) {
+          // Set current week as the active one
+          const currentIndex = data.indexOf(currentWeekRecord);
+          setCurrentWeekIndex(currentIndex);
+        } else {
+          // Current week doesn't exist, we'll show create button
+          setCurrentWeekIndex(null);
+        }
       } catch (error) {
         console.error("Failed to fetch weeks:", error);
       } finally {
@@ -55,7 +79,48 @@ export default function CookingHome() {
     fetchWeeks();
   }, []);
 
-  const currentWeek = weeks[currentWeekIndex];
+  const currentWeek = currentWeekIndex !== null ? weeks[currentWeekIndex] : null;
+
+  const handleCreateCurrentWeek = async () => {
+    if (!currentWeekData || isCreatingWeek) return;
+
+    setIsCreatingWeek(true);
+    try {
+      const response = await fetch("/api/cooking/weeks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          year: currentWeekData.year,
+          week: currentWeekData.week,
+        }),
+      });
+
+      if (response.ok) {
+        await response.json();
+        // Refetch weeks to get updated list with the new week
+        const weeksResponse = await fetch("/api/cooking/weeks");
+        const updatedWeeks = await weeksResponse.json();
+        setWeeks(updatedWeeks);
+
+        // Find and set the newly created week as current
+        const newWeekIndex = updatedWeeks.findIndex(
+          (week: Week) =>
+            week.year === currentWeekData.year && week.week === currentWeekData.week
+        );
+        if (newWeekIndex >= 0) {
+          setCurrentWeekIndex(newWeekIndex);
+        }
+      } else {
+        console.error("Failed to create week");
+      }
+    } catch (error) {
+      console.error("Error creating week:", error);
+    } finally {
+      setIsCreatingWeek(false);
+    }
+  };
 
   const handleCookingSuggestion = async () => {
     setIsLoading(true);
@@ -105,34 +170,55 @@ export default function CookingHome() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           {weekLoading ? (
             <p className="text-gray-600">Loading week...</p>
-          ) : currentWeek ? (
+          ) : currentWeekData ? (
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Current Week</h2>
-                <p className="text-gray-600">{formatWeekRange(currentWeek)}</p>
+                {currentWeek ? (
+                  <p className="text-gray-600">{formatWeekRange(currentWeek)}</p>
+                ) : (
+                  <p className="text-gray-600">
+                    Week {currentWeekData.week}, {currentWeekData.year}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentWeekIndex(i => i + 1)}
-                  disabled={currentWeekIndex >= weeks.length - 1}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  ← Prev
-                </button>
-                <button
-                  onClick={() => setCurrentWeekIndex(i => i - 1)}
-                  disabled={currentWeekIndex === 0}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next →
-                </button>
+                {currentWeek ? (
+                  <>
+                    <button
+                      onClick={() => setCurrentWeekIndex(i => i + 1)}
+                      disabled={currentWeekIndex >= weeks.length - 1}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ← Prev
+                    </button>
+                    <button
+                      onClick={() => setCurrentWeekIndex(i => i - 1)}
+                      disabled={currentWeekIndex === 0}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleCreateCurrentWeek}
+                    disabled={isCreatingWeek}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingWeek ? "Creating..." : "Create This Week"}
+                  </button>
+                )}
               </div>
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-gray-600 mb-2">No weeks found</p>
-              <Link href="/cooking/weeks/new" className="text-purple-600 hover:text-purple-800">
-                Add Week
+              <p className="text-gray-600 mb-2">Unable to determine current week</p>
+              <Link
+                href="/cooking/weeks/new"
+                className="text-purple-600 hover:text-purple-800"
+              >
+                Add Week Manually
               </Link>
             </div>
           )}
@@ -141,7 +227,9 @@ export default function CookingHome() {
         {currentWeek && (
           <>
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Cooks This Week</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Cooks This Week
+              </h3>
               {currentWeek.cooks.length === 0 ? (
                 <p className="text-gray-600">No cooks planned.</p>
               ) : (
@@ -176,7 +264,9 @@ export default function CookingHome() {
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Preps This Week</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Preps This Week
+              </h3>
               {currentWeek.preps.length === 0 ? (
                 <p className="text-gray-600">No preps planned.</p>
               ) : (
@@ -211,7 +301,9 @@ export default function CookingHome() {
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Shops This Week</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Shops This Week
+              </h3>
               {currentWeek.shops.length === 0 ? (
                 <p className="text-gray-600">No shopping trips planned.</p>
               ) : (
@@ -257,7 +349,9 @@ export default function CookingHome() {
               </div>
               <div>
                 <Link href="/cooking/shops">
-                  <h3 className="text-xl font-semibold text-gray-800 hover:text-blue-600 cursor-pointer transition-colors">Shop</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-blue-600 cursor-pointer transition-colors">
+                    Shop
+                  </h3>
                 </Link>
                 <p className="text-gray-600">Grocery shopping</p>
               </div>
@@ -290,7 +384,9 @@ export default function CookingHome() {
               </div>
               <div>
                 <Link href="/cooking/preps">
-                  <h3 className="text-xl font-semibold text-gray-800 hover:text-orange-600 cursor-pointer transition-colors">Prep</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-orange-600 cursor-pointer transition-colors">
+                    Prep
+                  </h3>
                 </Link>
                 <p className="text-gray-600">Meal preparation</p>
               </div>
@@ -310,8 +406,7 @@ export default function CookingHome() {
             <div className="text-sm text-gray-500">
               <p>
                 This week: {currentWeek ? currentWeek.preps.length : 0} project
-                {currentWeek && currentWeek.preps.length !== 1 ? "s" : ""} in
-                progress
+                {currentWeek && currentWeek.preps.length !== 1 ? "s" : ""} in progress
               </p>
             </div>
           </div>
@@ -324,7 +419,9 @@ export default function CookingHome() {
               </div>
               <div>
                 <Link href="/cooking/cooks">
-                  <h3 className="text-xl font-semibold text-gray-800 hover:text-red-600 cursor-pointer transition-colors">Cook</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 hover:text-red-600 cursor-pointer transition-colors">
+                    Cook
+                  </h3>
                 </Link>
                 <p className="text-gray-600">Making meals</p>
               </div>
