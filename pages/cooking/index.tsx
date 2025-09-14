@@ -155,6 +155,18 @@ export default function CookingHome() {
     return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
   };
 
+  if (weekLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Sgt Chef</h2>
+          <p className="text-gray-600">Preparing your cooking dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -168,9 +180,7 @@ export default function CookingHome() {
 
         {/* Week Selector */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          {weekLoading ? (
-            <p className="text-gray-600">Loading week...</p>
-          ) : currentWeekData ? (
+          {currentWeekData ? (
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Current Week</h2>
