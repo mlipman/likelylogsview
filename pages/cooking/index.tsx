@@ -50,8 +50,6 @@ export default function CookingHome() {
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [currentWeekIndex, setCurrentWeekIndex] = useState<number | null>(null);
   const [weekLoading, setWeekLoading] = useState(true);
-  const [suggestion, setSuggestion] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentWeekData, setCurrentWeekData] = useState<{
     year: number;
     week: number;
@@ -196,32 +194,6 @@ export default function CookingHome() {
     }
   };
 
-  const handleCookingSuggestion = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/cooking/suggest", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          week_id: currentWeek ? currentWeek.id : 1,
-          user_query: "What should I cook?",
-        }),
-      });
-
-      const data = await response.json();
-      setSuggestion(data.suggestion);
-    } catch (error) {
-      console.error("Failed to get cooking suggestion:", error);
-      setSuggestion(
-        "Sorry, I couldn't get suggestions right now. Please try again later."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const formatWeekRange = (week: Week) => {
     const date = setISOWeek(new Date(week.year, 0, 4), week.week);
     const start = addDays(startOfISOWeek(date), -2);
@@ -268,17 +240,17 @@ export default function CookingHome() {
               </div>
               <div>
                 <div className="flex gap-2 mb-2">
-                  {currentWeek ? (
+                  {currentWeek && currentWeekIndex != null ? (
                     <>
                       <button
-                        onClick={() => setCurrentWeekIndex(i => i + 1)}
+                        onClick={() => setCurrentWeekIndex(i => (i || 0) + 1)}
                         disabled={currentWeekIndex >= weeks.length - 1}
                         className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
                       >
                         ← Prev
                       </button>
                       <button
-                        onClick={() => setCurrentWeekIndex(i => i - 1)}
+                        onClick={() => setCurrentWeekIndex(i => (i || 0) - 1)}
                         disabled={currentWeekIndex === 0}
                         className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
                       >
