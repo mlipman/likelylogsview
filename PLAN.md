@@ -1,6 +1,6 @@
 10/9: cleaned up the home page.
-next step: add a simple ai chat.
-after that: add in context and mcp.
+added simple chat.
+next: add in context and mcp.
 --
 9/6: had codex make cook, plan, and shop more usable
 when loading page it now shows things for this week,
