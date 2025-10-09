@@ -1,8 +1,10 @@
 // import { useRouter } from "next/router";
 import Link from "next/link";
-import {useEffect, useState} from "react";
+import {FormEvent, KeyboardEvent, useEffect, useState} from "react";
 import {addDays, format, setISOWeek, startOfISOWeek} from "date-fns";
 import {getCurrentWeek} from "../../utils/weekUtils";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 interface Cook {
   id: number;
@@ -32,6 +34,17 @@ interface Week {
   shops: Shop[];
 }
 
+interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+const chatSystemMessage: ChatMessage = {
+  role: "system",
+  content:
+    "You are Sgt Chef, a helpful cooking assistant who gives concise, practical advice about meal planning, prep, and grocery shopping.",
+};
+
 export default function CookingHome() {
   // const router = useRouter();
   const [weeks, setWeeks] = useState<Week[]>([]);
@@ -44,6 +57,67 @@ export default function CookingHome() {
     week: number;
   } | null>(null);
   const [isCreatingWeek, setIsCreatingWeek] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  const sendChatMessage = async () => {
+    const trimmedInput = chatInput.trim();
+    if (!trimmedInput || chatLoading) return;
+
+    const userMessage: ChatMessage = {role: "user", content: trimmedInput};
+    const updatedMessages = [...chatMessages, userMessage];
+    setChatMessages(updatedMessages);
+    setChatInput("");
+    setChatError(null);
+    setChatLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messagesWithContext: [chatSystemMessage, ...updatedMessages],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch response");
+      }
+
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: data.content,
+      };
+
+      setChatMessages(prevMessages => [...prevMessages, assistantMessage]);
+    } catch (error) {
+      setChatError(
+        error instanceof Error
+          ? error.message
+          : "Sorry, something went wrong. Please try again."
+      );
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await sendChatMessage();
+  };
+
+  const handleChatKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendChatMessage();
+    }
+  };
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -489,6 +563,80 @@ export default function CookingHome() {
                 {currentWeek && currentWeek.cooks.length !== 1 ? "s" : ""} planned
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Sgt Chef Chat */}
+        <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Ask Sgt Chef</h3>
+          <p className="text-gray-600 mb-4">
+            Get quick ideas about what to cook, how to prep, or what to buy. Sgt Chef
+            remembers this conversation while you stay on this page.
+          </p>
+
+          <div className="space-y-4">
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              {chatMessages.length === 0 && !chatLoading ? (
+                <div className="text-sm text-gray-500">
+                  Ask for recipe ideas, prep strategies, or shopping help to get started.
+                </div>
+              ) : (
+                chatMessages.map((message, index) => (
+                  <div
+                    key={`${message.role}-${index}`}
+                    className={`flex ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-2xl rounded-lg px-4 py-3 text-sm shadow-sm ${
+                        message.role === "user"
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {chatLoading && (
+                <div className="text-sm text-gray-500">Sgt Chef is thinking...</div>
+              )}
+            </div>
+
+            {chatError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                {chatError}
+              </div>
+            )}
+
+            <form onSubmit={handleChatSubmit} className="space-y-2">
+              <textarea
+                value={chatInput}
+                onChange={event => setChatInput(event.target.value)}
+                onKeyDown={handleChatKeyDown}
+                rows={3}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                placeholder="Ask for cooking suggestions, prep plans, or shopping tips..."
+                disabled={chatLoading}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  Press Enter to send, Shift + Enter for a new line.
+                </span>
+                <button
+                  type="submit"
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {chatLoading ? "Sending..." : "Send"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
