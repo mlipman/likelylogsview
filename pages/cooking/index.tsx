@@ -192,33 +192,40 @@ export default function CookingHome() {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                {currentWeek ? (
-                  <>
+              <div>
+                <div className="flex gap-2 mb-2">
+                  {currentWeek ? (
+                    <>
+                      <button
+                        onClick={() => setCurrentWeekIndex(i => i + 1)}
+                        disabled={currentWeekIndex >= weeks.length - 1}
+                        className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
+                      >
+                        ← Prev
+                      </button>
+                      <button
+                        onClick={() => setCurrentWeekIndex(i => i - 1)}
+                        disabled={currentWeekIndex === 0}
+                        className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
+                      >
+                        Next →
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={() => setCurrentWeekIndex(i => i + 1)}
-                      disabled={currentWeekIndex >= weeks.length - 1}
-                      className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
+                      onClick={handleCreateCurrentWeek}
+                      disabled={isCreatingWeek}
+                      className={`${styles.button.base} ${styles.button.primary} ${styles.button.disabled}`}
                     >
-                      ← Prev
+                      {isCreatingWeek ? "Creating..." : "Create This Week"}
                     </button>
-                    <button
-                      onClick={() => setCurrentWeekIndex(i => i - 1)}
-                      disabled={currentWeekIndex === 0}
-                      className={`${styles.button.base} ${styles.button.secondary} ${styles.button.disabled}`}
-                    >
-                      Next →
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleCreateCurrentWeek}
-                    disabled={isCreatingWeek}
-                    className={`${styles.button.base} ${styles.button.primary} ${styles.button.disabled}`}
-                  >
-                    {isCreatingWeek ? "Creating..." : "Create This Week"}
-                  </button>
-                )}
+                  )}
+                </div>
+                <div className="text-center">
+                  <Link href="/cooking/weeks" className={styles.link.blue}>
+                    Manage Weeks
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (
@@ -362,16 +369,23 @@ export default function CookingHome() {
             <div className={`${styles.spacingY2} mb-4`}>
               <Link href="/cooking/shops/new" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.blue}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.purple}`}
                 >
                   Plan Shopping List
                 </button>
               </Link>
               <Link href="/cooking/shop-record" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.blue}`}
                 >
                   Record Shopping Trip
+                </button>
+              </Link>
+              <Link href="/cooking/staples" className="w-full block">
+                <button
+                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                >
+                  View Staples
                 </button>
               </Link>
             </div>
@@ -403,16 +417,23 @@ export default function CookingHome() {
             <div className={`${styles.spacingY2} mb-4`}>
               <Link href="/cooking/preps/new" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.orange}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.purple}`}
                 >
                   Plan Prep Project
                 </button>
               </Link>
               <Link href="/cooking/prep-record" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.blue}`}
                 >
                   Record Prep Session
+                </button>
+              </Link>
+              <Link href="/cooking/projects" className="w-full block">
+                <button
+                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                >
+                  View Projects
                 </button>
               </Link>
             </div>
@@ -442,16 +463,23 @@ export default function CookingHome() {
             <div className={`${styles.spacingY2} mb-4`}>
               <Link href="/cooking/add-cook" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.red}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.purple}`}
                 >
                   Plan New Cook
                 </button>
               </Link>
               <Link href="/cooking/cook-record" className="w-full block">
                 <button
-                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                  className={`${styles.actionButton.base} ${styles.actionButton.blue}`}
                 >
                   Record Cooking
+                </button>
+              </Link>
+              <Link href="/cooking/recipes" className="w-full block">
+                <button
+                  className={`${styles.actionButton.base} ${styles.actionButton.green}`}
+                >
+                  Browse Recipes
                 </button>
               </Link>
             </div>
@@ -460,90 +488,6 @@ export default function CookingHome() {
                 This week: {currentWeek ? currentWeek.cooks.length : 0} meal
                 {currentWeek && currentWeek.cooks.length !== 1 ? "s" : ""} planned
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className={styles.cardMb}>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <button
-              onClick={handleCookingSuggestion}
-              disabled={isLoading}
-              className={`${styles.quickActionButton} ${styles.actionButton.purple} ${styles.button.disabled}`}
-            >
-              <span className="mr-2">🤖</span>
-              {isLoading ? "Thinking..." : "What should I cook?"}
-            </button>
-            <Link
-              href="/cooking/staples"
-              className={`${styles.quickActionButton} ${styles.actionButton.gray}`}
-            >
-              <span className="mr-2">📋</span>
-              View Staples
-            </Link>
-            <Link
-              href="/cooking/recipes"
-              className={`${styles.quickActionButton} ${styles.actionButton.indigo}`}
-            >
-              <span className="mr-2">📖</span>
-              Browse Recipes
-            </Link>
-            <Link
-              href="/cooking/projects"
-              className={`${styles.quickActionButton} ${styles.actionButton.teal}`}
-            >
-              <span className="mr-2">🛠️</span>
-              View Projects
-            </Link>
-            <Link
-              href="/cooking/weeks"
-              className={`${styles.quickActionButton} ${styles.actionButton.purple}`}
-            >
-              <span className="mr-2">📅</span>
-              Manage Weeks
-            </Link>
-          </div>
-        </div>
-
-        {/* AI Suggestions */}
-        {suggestion && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-8">
-            <h3 className="text-xl font-semibold text-purple-800 mb-4">
-              🤖 Cooking Suggestions
-            </h3>
-            <div className="text-gray-700 whitespace-pre-wrap">{suggestion}</div>
-          </div>
-        )}
-
-        {/* Week Summary */}
-        <div className={styles.card}>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Week Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Starting Status</h4>
-              <p className="text-sm text-gray-600">
-                Missing: olive oil, garlic
-                <br />
-                Carryover: leftover pasta, roasted vegetables
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Recent Activity</h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>• Shopped at Whole Foods (Mon)</p>
-                <p>• Made pizza dough (Tue)</p>
-                <p>• Cooked pasta primavera (Wed)</p>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Upcoming Plans</h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>• Use pizza dough (Fri)</p>
-                <p>• Shop for weekend (Sat)</p>
-                <p>• Meal prep for next week (Sun)</p>
-              </div>
             </div>
           </div>
         </div>
