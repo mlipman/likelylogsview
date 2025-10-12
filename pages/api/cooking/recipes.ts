@@ -1,43 +1,46 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import {PrismaClient} from "@prisma/client";
+import {recipeService} from "../../../services/recipes";
 
-const prisma = new PrismaClient();
+async function handleGet(res: NextApiResponse) {
+  const recipes = await recipeService.findMany();
+  res.status(200).json(recipes);
+}
+
+async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+  const {title, content_md, source, url} = req.body;
+  const newRecipe = await recipeService.create({
+    title,
+    content_md,
+    source,
+    url,
+  });
+  res.status(201).json(newRecipe);
+}
+
+async function handlePut(req: NextApiRequest, res: NextApiResponse) {
+  const {id, title, content_md, source, url} = req.body;
+  const updatedRecipe = await recipeService.update(id, {
+    title,
+    content_md,
+    source,
+    url,
+  });
+  res.status(200).json(updatedRecipe);
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     switch (req.method) {
       case "GET":
-        const recipes = await prisma.recipe.findMany({
-          orderBy: {created_at: "desc"},
-        });
-        res.status(200).json(recipes);
+        await handleGet(res);
         break;
 
       case "POST":
-        const {title, content_md, source, url} = req.body;
-        const newRecipe = await prisma.recipe.create({
-          data: {
-            title,
-            content_md,
-            source,
-            url,
-          },
-        });
-        res.status(201).json(newRecipe);
+        await handlePost(req, res);
         break;
 
       case "PUT":
-        const {id, title: updateTitle, content_md: updateContent, source: updateSource, url: updateUrl} = req.body;
-        const updatedRecipe = await prisma.recipe.update({
-          where: {id},
-          data: {
-            title: updateTitle,
-            content_md: updateContent,
-            source: updateSource,
-            url: updateUrl,
-          },
-        });
-        res.status(200).json(updatedRecipe);
+        await handlePut(req, res);
         break;
 
       default:
@@ -47,7 +50,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error("Recipe API error:", error);
     res.status(500).json({error: "Internal server error"});
-  } finally {
-    await prisma.$disconnect();
   }
 }

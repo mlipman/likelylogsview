@@ -10,4 +10,7 @@ const prisma = global.prisma || new PrismaClient();
 //   global.prisma = prisma;
 // }
 
+// Non-content fields that exist on all entities
+export const NON_CONTENT_FIELDS = ["id", "created_at", "updated_at"] as const;
+
 export default prisma;

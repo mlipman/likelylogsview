@@ -34,6 +34,8 @@ The current focus for this development session is the cooking app including the 
 - Image utilities handle Cloudinary URL generation (`utils/imageUtils.ts`)
 - API endpoints follow RESTful patterns with proper error handling
 - TypeScript strict mode enabled with comprehensive type checking
+- **Service Layer Architecture**: Business logic separated into `services/` directory
+- **Consistent Type Patterns**: Using Prisma-generated types with utility types to avoid duplication
 
 ### Environment Variables Required:
 
@@ -52,6 +54,31 @@ For front-end styling and layout, I'm totally happy to vibe code and leave that 
 This app should work well on both phone and laptop. It should look very nice and professional with a high effort clean looking aestecic design,
 but nothing over the top like parallax scrolling or silly effects. Functional and pleasant to use and look at.
 This app is a personal project meant to be used only by me.
+
+### Service Layer & API Patterns:
+
+**IMPORTANT**: Before implementing new entity services, examine the existing patterns to understand the desired structure.
+
+#### Service Layer Pattern (`services/`)
+
+- Use TypeScript utility types to derive from Prisma-generated types
+- Example: `export type RecipeContent = Omit<Recipe, (typeof NON_CONTENT_FIELDS)[number]>;`
+- The `NON_CONTENT_FIELDS` constant in `lib/prisma.ts` defines fields to exclude: `["id", "created_at", "updated_at"]`
+- Service classes provide CRUD methods and a `string_description()` method for MCP output
+- Export singleton instances for consistent usage across the app
+
+#### API Handler Pattern (`pages/api/cooking/`)
+
+- Break HTTP methods into separate handler functions (`handleGet`, `handlePost`, `handlePut`)
+- Use explicit destructuring in handlers for clarity: `const {id, title, content_md, source, url} = req.body;`
+- HTTP layer only handles request/response, delegates business logic to service layer
+- Consistent error handling in main handler function
+
+#### MCP Integration Pattern
+
+- Add tools to `pages/api/mcp/index.ts` tools list
+- Import service and use `string_description()` method for consistent formatting
+- Follow existing pattern for new MCP functions
 
 ### ts Style:
 
@@ -124,6 +151,33 @@ very normalized paradigm where the Cook would only have a recipe_id. And in the 
 The last model that is tied to a week is a StartingStatus. This is a state of ingredients as of thursday or friday of the previous week that will inform
 the upcoming week. There are two main types of updates in a StartingStatus: carryover, ie leftover from shops, cooks or preps from the previous week or before
 that are still available. In other words extra assets that can be used. and secondly deficiencies which are staples that i usually have but am low or out of this week.
+
+## Data Model summary
+
+```
++-----------+--------------------+------------+---------+
+|           | ingredients        | components | meals   |
++-----------+--------------------+------------+---------+
+| weekless  | Staples            | Project    | Recipe  |
+| weekly    | StartingStatus/Shop| Prep       | Cook    |
++-----------+--------------------+------------+---------+
+```
+
+### Long lived
+
+Project
+Recipe
+
+### Week
+
+Week
+Starting Status (might get folded into week because 1:1)
+
+### Weekly
+
+Shop (derived from hard coded Staples)
+Prep (derived from Project)
+Cook (derived from Recipe)
 
 ## MCP
 
