@@ -124,3 +124,8 @@ very normalized paradigm where the Cook would only have a recipe_id. And in the 
 The last model that is tied to a week is a StartingStatus. This is a state of ingredients as of thursday or friday of the previous week that will inform
 the upcoming week. There are two main types of updates in a StartingStatus: carryover, ie leftover from shops, cooks or preps from the previous week or before
 that are still available. In other words extra assets that can be used. and secondly deficiencies which are staples that i usually have but am low or out of this week.
+
+## MCP
+
+added via
+claude mcp add --transport http likelylogs-remote https://likelylogsview.vercel.app/api/mcp

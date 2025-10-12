@@ -37,6 +37,10 @@ interface Week {
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  toolsUsed?: Array<{
+    name: string;
+    result: any;
+  }>;
 }
 
 const chatSystemMessage: ChatMessage = {
@@ -91,6 +95,7 @@ export default function CookingHome() {
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: data.content,
+        toolsUsed: data.toolsUsed,
       };
 
       setChatMessages(prevMessages => [...prevMessages, assistantMessage]);
@@ -567,6 +572,18 @@ export default function CookingHome() {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
+                      {message.toolsUsed && message.toolsUsed.length > 0 && (
+                        <div className="mb-2 pb-2 border-b border-gray-300">
+                          <div className="text-xs text-gray-600 mb-1">
+                            🔧 Tools used:
+                          </div>
+                          {message.toolsUsed.map((tool, toolIndex) => (
+                            <div key={toolIndex} className="text-xs text-gray-600">
+                              • {tool.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                         {message.content}
                       </ReactMarkdown>
@@ -576,7 +593,9 @@ export default function CookingHome() {
               )}
 
               {chatLoading && (
-                <div className="text-sm text-gray-500">Sgt Chef is thinking...</div>
+                <div className="text-sm text-gray-500">
+                  Sgt Chef is thinking and may be checking your cooking data...
+                </div>
               )}
             </div>
 
