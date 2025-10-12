@@ -1,101 +1,7 @@
 import type {NextApiRequest, NextApiResponse} from "next";
 import prisma from "../../../lib/prisma";
-import {recipeService, recipeToString} from "../../../services/recipes";
-
-/**
- * MCP (Model Context Protocol) utility functions for consistent responses
- */
-
-interface McpResponse {
-  jsonrpc: "2.0";
-  id: string;
-  result?: {
-    content: Array<{
-      type: "text";
-      text: string;
-    }>;
-    isError?: boolean;
-  };
-  error?: {
-    code: number;
-    message: string;
-    data?: any;
-  };
-}
-
-/**
- * Create a successful MCP response
- */
-function mcpSuccess(requestId: string, text: string): McpResponse {
-  return {
-    jsonrpc: "2.0",
-    id: requestId,
-    result: {
-      content: [
-        {
-          type: "text",
-          text,
-        },
-      ],
-    },
-  };
-}
-
-/**
- * Create an error MCP response (using result format with isError flag)
- */
-function mcpError(requestId: string, message: string): McpResponse {
-  return {
-    jsonrpc: "2.0",
-    id: requestId,
-    result: {
-      content: [
-        {
-          type: "text",
-          text: message,
-        },
-      ],
-      isError: true,
-    },
-  };
-}
-
-/**
- * Create a protocol-level error MCP response
- */
-function mcpProtocolError(
-  requestId: string,
-  code: number,
-  message: string,
-  data?: any
-): McpResponse {
-  return {
-    jsonrpc: "2.0",
-    id: requestId,
-    error: {
-      code,
-      message,
-      data,
-    },
-  };
-}
-
-/**
- * Wrapper function that handles try/catch and returns appropriate MCP response
- */
-async function mcpHandler(
-  requestId: string,
-  operation: () => Promise<string>
-): Promise<McpResponse> {
-  try {
-    const text = await operation();
-    return mcpSuccess(requestId, text);
-  } catch (error) {
-    console.error("MCP operation error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return mcpError(requestId, `Error: ${message}`);
-  }
-}
+import {mcpProtocolError, mcpSuccess, mcpError, McpTool, toolToSchema} from "./utils";
+import {recipeMcpTools} from "./recipes";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests for MCP protocol
@@ -141,88 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 additionalProperties: false,
               },
             },
-            {
-              name: "view_all_recipes",
-              description: "View all cooking recipes from the Sgt Chef app",
-              inputSchema: {
-                type: "object",
-                properties: {},
-                additionalProperties: false,
-              },
-            },
-            {
-              name: "create_recipe",
-              description: "Create a new cooking recipe in the Sgt Chef app",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  title: {
-                    type: "string",
-                    description: "The recipe title",
-                  },
-                  content_md: {
-                    type: "string",
-                    description: "The recipe content in markdown format",
-                  },
-                  source: {
-                    type: "string",
-                    description: "The source of the recipe (optional)",
-                  },
-                  url: {
-                    type: "string",
-                    description: "URL to the original recipe (optional)",
-                  },
-                },
-                required: ["title"],
-                additionalProperties: false,
-              },
-            },
-            {
-              name: "update_recipe",
-              description: "Update an existing cooking recipe in the Sgt Chef app",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "number",
-                    description: "The recipe ID to update",
-                  },
-                  title: {
-                    type: "string",
-                    description: "The recipe title",
-                  },
-                  content_md: {
-                    type: "string",
-                    description: "The recipe content in markdown format",
-                  },
-                  source: {
-                    type: "string",
-                    description: "The source of the recipe",
-                  },
-                  url: {
-                    type: "string",
-                    description: "URL to the original recipe",
-                  },
-                },
-                required: ["id"],
-                additionalProperties: false,
-              },
-            },
-            {
-              name: "delete_recipe",
-              description: "Delete a cooking recipe from the Sgt Chef app",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "number",
-                    description: "The recipe ID to delete",
-                  },
-                },
-                required: ["id"],
-                additionalProperties: false,
-              },
-            },
+            ...recipeMcpTools.map(toolToSchema),
           ],
         },
       });
@@ -290,49 +115,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
 
-      if (name === "view_all_recipes") {
-        const response = await mcpHandler(requestId, async () => {
-          const recipes = await recipeService.findMany();
-          return recipeService.allRecipes(recipes);
-        });
-        return res.status(200).json(response);
-      }
+      // Check the various files for a tool of that name
+      let tool = recipeMcpTools.find(t => t.name === name);
 
-      if (name === "create_recipe") {
-        const {title, content_md, source, url} = args;
-        const response = await mcpHandler(requestId, async () => {
-          const newRecipe = await recipeService.create({title, content_md, source, url});
-          return `Successfully created recipe:\n\n${recipeToString(newRecipe)}`;
-        });
-        return res.status(200).json(response);
+      if (tool) {
+        try {
+          const result = await tool.handler(args);
+          return res.status(200).json(mcpSuccess(requestId, result));
+        } catch (error) {
+          console.error("MCP tool error:", error);
+          const message = error instanceof Error ? error.message : String(error);
+          const response = mcpError(requestId, `Error: ${message}`);
+          return res.status(200).json(response);
+        }
+      } else {
+        return res
+          .status(400)
+          .json(mcpProtocolError(requestId, -32602, `Unknown tool: ${name}`));
       }
-
-      if (name === "update_recipe") {
-        const {id: recipeId, title, content_md, source, url} = args;
-        const response = await mcpHandler(requestId, async () => {
-          const updatedRecipe = await recipeService.update(recipeId, {
-            title,
-            content_md,
-            source,
-            url,
-          });
-          return `Successfully updated recipe:\n\n${recipeToString(updatedRecipe)}`;
-        });
-        return res.status(200).json(response);
-      }
-
-      if (name === "delete_recipe") {
-        const {id: recipeId} = args;
-        const response = await mcpHandler(requestId, async () => {
-          const deletedRecipe = await recipeService.delete(recipeId);
-          return `Successfully deleted recipe:\n\n${recipeToString(deletedRecipe)}`;
-        });
-        return res.status(200).json(response);
-      }
-
-      return res
-        .status(400)
-        .json(mcpProtocolError(requestId, -32602, `Unknown tool: ${name}`));
     }
 
     // Method not supported

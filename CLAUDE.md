@@ -57,28 +57,126 @@ This app is a personal project meant to be used only by me.
 
 ### Service Layer & API Patterns:
 
-**IMPORTANT**: Before implementing new entity services, examine the existing patterns to understand the desired structure.
+**IMPORTANT**: Before implementing new entity services, examine the existing patterns to understand the desired structure. The Recipe implementation serves as the reference pattern for all other entities.
 
 #### Service Layer Pattern (`services/`)
 
+Services provide a clean abstraction layer between HTTP endpoints and database operations:
+
+```typescript
+// Type definition using Prisma utility types
+export type RecipeContent = Omit<Recipe, (typeof NON_CONTENT_FIELDS)[number]>;
+
+// Service class with CRUD operations
+export class RecipeService {
+  async findMany(): Promise<Recipe[]>;
+  async findById(id: number): Promise<Recipe | null>;
+  async create(data: RecipeContent): Promise<Recipe>;
+  async update(id: number, data: RecipeContent): Promise<Recipe>;
+  async delete(id: number): Promise<Recipe>;
+  allRecipes(recipes: Recipe[]): string; // For MCP formatting
+}
+
+// Export singleton instance
+export const recipeService = new RecipeService();
+```
+
+**Key Patterns:**
+
 - Use TypeScript utility types to derive from Prisma-generated types
-- Example: `export type RecipeContent = Omit<Recipe, (typeof NON_CONTENT_FIELDS)[number]>;`
 - The `NON_CONTENT_FIELDS` constant in `lib/prisma.ts` defines fields to exclude: `["id", "created_at", "updated_at"]`
-- Service classes provide CRUD methods and a `string_description()` method for MCP output
+- Service classes focus purely on business logic, no HTTP concerns
+- Services return Prisma types directly, formatting is handled elsewhere
 - Export singleton instances for consistent usage across the app
 
 #### API Handler Pattern (`pages/api/cooking/`)
 
-- Break HTTP methods into separate handler functions (`handleGet`, `handlePost`, `handlePut`)
-- Use explicit destructuring in handlers for clarity: `const {id, title, content_md, source, url} = req.body;`
+HTTP endpoints delegate to service layer for clean separation of concerns:
+
+```typescript
+async function handleGet(res: NextApiResponse) {
+  const recipes = await recipeService.findMany();
+  res.status(200).json(recipes);
+}
+
+async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+  const {title, content_md, source, url} = req.body;
+  const newRecipe = await recipeService.create({title, content_md, source, url});
+  res.status(201).json(newRecipe);
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    switch (req.method) {
+      case "GET":
+        await handleGet(res);
+        break;
+      case "POST":
+        await handlePost(req, res);
+        break;
+      // ...
+    }
+  } catch (error) {
+    // Consistent error handling
+  }
+}
+```
+
+**Key Patterns:**
+
+- Break HTTP methods into separate handler functions for clarity
+- Use explicit destructuring in handlers: `const {id, title, content_md} = req.body;`
 - HTTP layer only handles request/response, delegates business logic to service layer
 - Consistent error handling in main handler function
+- No direct Prisma calls in API handlers - always use service layer
 
-#### MCP Integration Pattern
+#### MCP Integration Pattern (`pages/api/mcp/`)
 
-- Add tools to `pages/api/mcp/index.ts` tools list
-- Import service and use `string_description()` method for consistent formatting
-- Follow existing pattern for new MCP functions
+MCP tools follow a consistent pattern for API integration and type safety:
+
+**File Structure:**
+
+- `mcp/utils.ts` - Core MCP protocol types and utilities
+- `mcp/recipes.ts` - Entity-specific MCP tool definitions
+- `mcp/index.ts` - Main MCP protocol router
+
+**Tool Definition Pattern:**
+
+```typescript
+const createRecipe: McpTool = {
+  name: "create_recipe",
+  description: "Create a new cooking recipe in the Sgt Chef app",
+  arguments: [
+    // boolean is whether or not its required
+    stringArgument("title", "The recipe title", true),
+    stringArgument("content_md", "The recipe content in markdown format", false),
+    stringArgument("source", "The source of the recipe", false),
+    stringArgument("url", "URL to the original recipe", false),
+  ],
+  handler: async (args: {
+    title: string;
+    content_md?: string;
+    source?: string;
+    url?: string;
+  }): Promise<string> => {
+    const {title, content_md, source, url} = args;
+    const data: RecipeContent = {
+      title,
+      content_md: content_md || null,
+      source: source || null,
+      url: url || null,
+    };
+    const newRecipe = await recipeService.create(data);
+    return `Successfully created recipe:\n\n${recipeToString(newRecipe)}`;
+  },
+};
+```
+
+**Key Patterns:**
+
+- Define arguments as arrays using helper functions (`stringArgument`, `idArgument`)
+- The types of the `args` input to handler needs to match the list of arguments for the McpTool
+- Use utility functions like `recipeToString()` for formatting output
 
 ### ts Style:
 
