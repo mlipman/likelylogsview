@@ -1,8 +1,9 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import prisma from "../../../lib/prisma";
-import {mcpProtocolError, mcpSuccess, mcpError, McpTool, toolToSchema} from "./utils";
+import {mcpProtocolError, mcpSuccess, mcpError, toolToSchema} from "./utils";
 import {recipeMcpTools} from "./recipes";
+import {projectMcpTools} from "./projects";
 
+const allTools = [...projectMcpTools, ...recipeMcpTools];
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests for MCP protocol
   if (req.method !== "POST") {
@@ -36,19 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         jsonrpc: "2.0",
         id: requestId,
         result: {
-          tools: [
-            {
-              name: "view_projects",
-              description:
-                "View all cooking projects (prep templates) from the Sgt Chef app",
-              inputSchema: {
-                type: "object",
-                properties: {},
-                additionalProperties: false,
-              },
-            },
-            ...recipeMcpTools.map(toolToSchema),
-          ],
+          tools: allTools.map(toolToSchema),
         },
       });
     }
@@ -70,53 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (method === "tools/call") {
       const {name, arguments: args} = params;
 
-      if (name === "view_projects") {
-        try {
-          // Mirror the exact functionality from pages/api/cooking/projects.ts
-          const projects = await prisma.project.findMany({
-            orderBy: {created_at: "desc"},
-          });
-
-          return res.status(200).json({
-            jsonrpc: "2.0",
-            id: requestId,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: `Found ${projects.length} cooking projects:\n\n${projects
-                    .map(project => {
-                      return `**${project.title}**\n${
-                        project.source ? `Source: ${project.source}\n` : ""
-                      }${project.url ? `URL: ${project.url}\n` : ""}${
-                        project.content_md ? `Content:\n${project.content_md}\n` : ""
-                      }\n---\n`;
-                    })
-                    .join("\n")}`,
-                },
-              ],
-            },
-          });
-        } catch (error) {
-          console.error("Error fetching projects:", error);
-          return res.status(200).json({
-            jsonrpc: "2.0",
-            id: requestId,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: "Error fetching projects from database",
-                },
-              ],
-              isError: true,
-            },
-          });
-        }
-      }
-
-      // Check the various files for a tool of that name
-      let tool = recipeMcpTools.find(t => t.name === name);
+      const tool = allTools.find(t => t.name === name);
 
       if (tool) {
         try {

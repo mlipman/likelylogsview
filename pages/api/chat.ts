@@ -1,4 +1,7 @@
 import type {NextApiRequest, NextApiResponse} from "next";
+import {toolToSchema} from "./mcp/utils";
+import {recipeMcpTools} from "./mcp/recipes";
+import {projectMcpTools} from "./mcp/projects";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -24,90 +27,33 @@ interface AnthropicResponse {
   };
 }
 
-interface MCPRequest {
-  jsonrpc: string;
-  id: string;
-  method: string;
-  params?: any;
-}
 
-interface MCPResponse {
-  jsonrpc: string;
-  id: string;
-  result?: any;
-  error?: {
-    code: number;
-    message: string;
-  };
-}
-
-/*
-interface OpenAIResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
-  error?: {
-    message: string;
-  };
-}
-
-async function fetchOpenAIResponse(
-  messagesWithContext: Message[]
-): Promise<OpenAIResponse> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPEN_AI_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: messagesWithContext,
-      temperature: 0.7,
-      max_tokens: 1000,
-    }),
-  });
-
-  const data: OpenAIResponse = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Failed to get response from OpenAI");
-  }
-
-  return data;
-}
-*/
-
-const MCP_SERVER_URL = "https://likelylogsview.vercel.app/api/mcp";
+// Combine all available MCP tools
+const allTools = [...projectMcpTools, ...recipeMcpTools];
 
 async function callMCPTool(toolName: string, args: any = {}): Promise<any> {
-  const request: MCPRequest = {
-    jsonrpc: "2.0",
-    id: Math.random().toString(36).substring(7),
-    method: "tools/call",
-    params: {
-      name: toolName,
-      arguments: args,
-    },
-  };
+  // Find the tool directly instead of making HTTP request
+  const tool = allTools.find(t => t.name === toolName);
 
-  const response = await fetch(MCP_SERVER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-  });
-
-  const mcpResponse: MCPResponse = await response.json();
-
-  if (mcpResponse.error) {
-    throw new Error(`MCP Tool Error: ${mcpResponse.error.message}`);
+  if (!tool) {
+    throw new Error(`MCP Tool Error: Unknown tool: ${toolName}`);
   }
 
-  return mcpResponse.result;
+  try {
+    const result = await tool.handler(args);
+    return {
+      content: [
+        {
+          type: "text",
+          text: result,
+        },
+      ],
+    };
+  } catch (error) {
+    console.error("MCP tool error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`MCP Tool Error: ${message}`);
+  }
 }
 
 async function fetchAnthropicResponse(
@@ -129,17 +75,14 @@ async function fetchAnthropicResponse(
       model: "claude-sonnet-4-5-20250929",
       messages: messages,
       max_tokens: 10000,
-      tools: [
-        {
-          name: "view_projects",
-          description: "View all cooking projects (prep templates) from the Sgt Chef app",
-          input_schema: {
-            type: "object",
-            properties: {},
-            additionalProperties: false,
-          },
-        },
-      ],
+      tools: allTools.map(tool => {
+        const schema = toolToSchema(tool);
+        return {
+          name: schema.name,
+          description: schema.description,
+          input_schema: schema.inputSchema, // Convert camelCase to snake_case for Anthropic API
+        };
+      }),
     }),
   });
 
@@ -167,12 +110,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let finalContent = "";
 
     for (const contentItem of response.content) {
-      if (contentItem.type === "tool_use" && contentItem.name === "view_projects") {
+      if (contentItem.type === "tool_use" && contentItem.name) {
         // Execute the MCP tool
-        const toolResult = await callMCPTool("view_projects", contentItem.input || {});
+        const toolResult = await callMCPTool(contentItem.name, contentItem.input || {});
 
         toolsUsed.push({
-          name: "view_projects",
+          name: contentItem.name,
           result: toolResult,
         });
 
@@ -188,7 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             content: JSON.stringify({
               type: "tool_result",
               tool_use_id: contentItem.id || "tool_1",
-              content: JSON.stringify(toolResult)
+              content: JSON.stringify(toolResult),
             }),
           },
         ];

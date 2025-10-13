@@ -1,43 +1,46 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import {PrismaClient} from "@prisma/client";
+import {projectService} from "../../../services/projects";
 
-const prisma = new PrismaClient();
+async function handleGet(res: NextApiResponse) {
+  const projects = await projectService.findMany();
+  res.status(200).json(projects);
+}
+
+async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+  const {title, content_md, source, url} = req.body;
+  const newProject = await projectService.create({
+    title,
+    content_md,
+    source,
+    url,
+  });
+  res.status(201).json(newProject);
+}
+
+async function handlePut(req: NextApiRequest, res: NextApiResponse) {
+  const {id, title, content_md, source, url} = req.body;
+  const updatedProject = await projectService.update(id, {
+    title,
+    content_md,
+    source,
+    url,
+  });
+  res.status(200).json(updatedProject);
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     switch (req.method) {
       case "GET":
-        const projects = await prisma.project.findMany({
-          orderBy: {created_at: "desc"},
-        });
-        res.status(200).json(projects);
+        await handleGet(res);
         break;
 
       case "POST":
-        const {title, content_md, source, url} = req.body;
-        const newProject = await prisma.project.create({
-          data: {
-            title,
-            content_md,
-            source,
-            url,
-          },
-        });
-        res.status(201).json(newProject);
+        await handlePost(req, res);
         break;
 
       case "PUT":
-        const {id, title: updateTitle, content_md: updateContent, source: updateSource, url: updateUrl} = req.body;
-        const updatedProject = await prisma.project.update({
-          where: {id},
-          data: {
-            title: updateTitle,
-            content_md: updateContent,
-            source: updateSource,
-            url: updateUrl,
-          },
-        });
-        res.status(200).json(updatedProject);
+        await handlePut(req, res);
         break;
 
       default:
@@ -47,7 +50,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error("Project API error:", error);
     res.status(500).json({error: "Internal server error"});
-  } finally {
-    await prisma.$disconnect();
   }
 }

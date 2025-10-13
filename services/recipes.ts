@@ -62,11 +62,18 @@ export class RecipeService {
  * Convert a single recipe to a formatted string
  */
 export function recipeToString(recipe: Recipe): string {
-  return `**${recipe.title}**\n${
-    recipe.source ? `Source: ${recipe.source}\n` : ""
-  }${recipe.url ? `URL: ${recipe.url}\n` : ""}${
-    recipe.content_md ? `Content:\n${recipe.content_md}\n` : ""
-  }ID: ${recipe.id}\nCreated: ${recipe.created_at}\nUpdated: ${recipe.updated_at}\n---\n`;
+  const parts = [`**${recipe.title}**`];
+
+  if (recipe.source) parts.push(`Source: ${recipe.source}`);
+  if (recipe.url) parts.push(`URL: ${recipe.url}`);
+  if (recipe.content_md) parts.push(`Content:\n${recipe.content_md}`);
+
+  parts.push(`ID: ${recipe.id}`);
+  parts.push(`Created: ${recipe.created_at}`);
+  parts.push(`Updated: ${recipe.updated_at}`);
+  parts.push('---');
+
+  return parts.join('\n') + '\n';
 }
 
 // Export a singleton instance

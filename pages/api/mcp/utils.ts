@@ -72,7 +72,10 @@ export interface McpArgument {
  * in the arguments field of the McpTool
  */
 export type McpToolHandler = (args: any) => Promise<string>;
+
+// =============================================================================
 // Argument Factory Functions
+// =============================================================================
 
 export const idArgument = (): McpArgument => ({
   name: "id",

@@ -178,6 +178,44 @@ const createRecipe: McpTool = {
 - The types of the `args` input to handler needs to match the list of arguments for the McpTool
 - Use utility functions like `recipeToString()` for formatting output
 
+#### Tool Calling Systems Architecture
+
+**IMPORTANT**: This application implements two separate tool calling systems that share the same handler functions:
+
+**1. Real MCP Server (`/api/mcp`)**
+- ✅ **Implements full MCP protocol** (JSON-RPC 2.0)
+- ✅ **External MCP clients can connect** (e.g., `claude mcp add --transport http`)
+- ✅ **Follows MCP specification** completely
+- **Usage**: External tools, Claude Desktop MCP integration
+
+```typescript
+// MCP Protocol Flow:
+MCP Client -> /api/mcp -> toolToSchema() -> McpResponse (JSON-RPC 2.0)
+```
+
+**2. Internal Anthropic Tool Calling (`/api/chat`)**
+- ❌ **NOT an MCP server**
+- ✅ **Uses Anthropic's native tool calling API**
+- ✅ **Reuses same JavaScript handler functions**
+- **Usage**: Internal chat interface
+
+```typescript
+// Chat Tool Flow:
+Anthropic API -> suggests tool -> tool.handler() directly -> continues conversation
+```
+
+**Shared Components:**
+Both systems use the exact same:
+- Tool handler functions (`createRecipe.handler`, `viewAllRecipes.handler`, etc.)
+- Service layer calls (`recipeService.create()`, etc.)
+- Business logic and validation
+
+**Benefits:**
+- ✅ **Code reuse**: Same business logic for both systems
+- ✅ **External compatibility**: Real MCP for external integrations
+- ✅ **Internal efficiency**: Direct function calls for chat interface
+- ✅ **Maintainability**: Single source of truth for tool functionality
+
 ### ts Style:
 
 Here's a sample to match the linter.
