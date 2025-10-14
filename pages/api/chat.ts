@@ -2,15 +2,23 @@ import type {NextApiRequest, NextApiResponse} from "next";
 import {toolToSchema} from "./mcp/utils";
 import {recipeMcpTools} from "./mcp/recipes";
 import {projectMcpTools} from "./mcp/projects";
+import {weekMcpTools} from "./mcp/weeks";
+import {shopMcpTools} from "./mcp/shops";
+import {cookMcpTools} from "./mcp/cooks";
+import {prepMcpTools} from "./mcp/preps";
+import {startingStatusMcpTools} from "./mcp/starting-statuses";
 
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
 }
 
-interface ToolUse {
-  name: string;
-  result: any;
+interface ConversationItem {
+  type: "text" | "tool_call";
+  content?: string; // For text items
+  tool_name?: string; // For tool call items
+  tool_input?: any; // For tool call items
+  tool_output?: any; // For tool call items
 }
 
 interface AnthropicResponse {
@@ -27,9 +35,16 @@ interface AnthropicResponse {
   };
 }
 
-
 // Combine all available MCP tools
-const allTools = [...projectMcpTools, ...recipeMcpTools];
+const allTools = [
+  ...projectMcpTools,
+  ...recipeMcpTools,
+  ...weekMcpTools,
+  ...shopMcpTools,
+  ...cookMcpTools,
+  ...prepMcpTools,
+  ...startingStatusMcpTools,
+];
 
 async function callMCPTool(toolName: string, args: any = {}): Promise<any> {
   // Find the tool directly instead of making HTTP request
@@ -59,6 +74,13 @@ async function callMCPTool(toolName: string, args: any = {}): Promise<any> {
 async function fetchAnthropicResponse(
   messagesWithContext: Message[]
 ): Promise<AnthropicResponse> {
+  console.log("🤖 Making LLM request...", {
+    messageCount: messagesWithContext.length,
+    lastMessage:
+      messagesWithContext[messagesWithContext.length - 1]?.content?.substring(0, 100) +
+      "...",
+  });
+
   const messages = messagesWithContext.map(msg => ({
     role: msg.role === "assistant" ? "assistant" : "user",
     content: msg.content,
@@ -89,8 +111,15 @@ async function fetchAnthropicResponse(
   const data: AnthropicResponse = await response.json();
 
   if (!response.ok) {
+    console.error("❌ LLM request failed:", data.error?.message);
     throw new Error(data.error?.message || "Failed to get response from Anthropic");
   }
+
+  console.log("✅ LLM response received", {
+    stopReason: data.stop_reason,
+    contentItems: data.content.length,
+    contentTypes: data.content.map(item => item.type),
+  });
 
   return data;
 }
@@ -102,55 +131,100 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const {messagesWithContext} = req.body;
-    const toolsUsed: ToolUse[] = [];
+    const conversationItems: ConversationItem[] = [];
+    let currentMessages = [...messagesWithContext];
 
-    const response = await fetchAnthropicResponse(messagesWithContext);
+    // Continue the conversation loop until Claude stops requesting tools
+    let loopCount = 0;
+    while (true) {
+      loopCount++;
+      console.log(`Starting conversation loop ${loopCount}`);
 
-    // Check if Claude wants to use tools
-    let finalContent = "";
+      const response = await fetchAnthropicResponse(currentMessages);
 
-    for (const contentItem of response.content) {
-      if (contentItem.type === "tool_use" && contentItem.name) {
-        // Execute the MCP tool
-        const toolResult = await callMCPTool(contentItem.name, contentItem.input || {});
+      let hasToolUse = false;
+      let textContent = "";
 
-        toolsUsed.push({
-          name: contentItem.name,
-          result: toolResult,
-        });
+      // Process all content items in this response
+      for (const contentItem of response.content) {
+        if (contentItem.type === "tool_use" && contentItem.name) {
+          hasToolUse = true;
 
-        // Add tool result to context and get Claude's response
-        const toolResultMessages = [
-          ...messagesWithContext,
-          {
-            role: "assistant" as const,
-            content: JSON.stringify([contentItem]), // Include the original tool_use
-          },
-          {
-            role: "user" as const,
+          console.log("🔧 Executing tool:", {
+            name: contentItem.name,
+            input: contentItem.input,
+            id: contentItem.id,
+          });
+
+          // Execute the MCP tool
+          const toolResult = await callMCPTool(contentItem.name, contentItem.input || {});
+
+          console.log("✅ Tool completed:", {
+            name: contentItem.name,
+            outputLength: JSON.stringify(toolResult).length,
+          });
+
+          // Add tool call to conversation items
+          conversationItems.push({
+            type: "tool_call",
+            tool_name: contentItem.name,
+            tool_input: contentItem.input || {},
+            tool_output: toolResult,
+          });
+
+          // Add tool use and result to message history for next iteration
+          currentMessages.push({
+            role: "assistant",
+            content: JSON.stringify({
+              type: "tool_use",
+              name: contentItem.name,
+              input: contentItem.input,
+              id: contentItem.id,
+            }),
+          });
+
+          currentMessages.push({
+            role: "user",
             content: JSON.stringify({
               type: "tool_result",
-              tool_use_id: contentItem.id || "tool_1",
-              content: JSON.stringify(toolResult),
+              tool_use_id: contentItem.id,
+              content: toolResult.content || [{type: "text", text: String(toolResult)}],
             }),
-          },
-        ];
+          });
+        } else if (contentItem.type === "text" && contentItem.text) {
+          textContent += contentItem.text;
+        }
+      }
 
-        const followupResponse = await fetchAnthropicResponse(toolResultMessages);
-        finalContent = followupResponse.content.find(item => item.text)?.text || "";
-      } else if (contentItem.type === "text" || contentItem.text) {
-        finalContent = contentItem.text || "";
+      // If there's text content, add it to conversation items
+      if (textContent.trim()) {
+        conversationItems.push({
+          type: "text",
+          content: textContent.trim(),
+        });
+      }
+
+      // If no tools were used in this iteration, we're done
+      if (!hasToolUse || response.stop_reason === "end_turn") {
+        console.log("Conversation complete", {
+          totalLoops: loopCount,
+          conversationItems: conversationItems.length,
+          stopReason: response.stop_reason,
+        });
+        break;
       }
     }
 
-    // If no tools were used, just return the text content
-    if (toolsUsed.length === 0) {
-      finalContent = response.content.find(item => item.text)?.text || "";
+    // If no conversation items were generated, add the final text content
+    if (conversationItems.length === 0) {
+      conversationItems.push({
+        type: "text",
+        content: "I apologize, but I couldn't process your request properly.",
+      });
     }
 
     return res.status(200).json({
-      content: finalContent,
-      toolsUsed: toolsUsed.length > 0 ? toolsUsed : undefined,
+      conversation: conversationItems,
     });
   } catch (error) {
     console.error("Error:", error);

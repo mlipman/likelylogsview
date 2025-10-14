@@ -1,6 +1,8 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 interface Project {
   id: number;
@@ -282,10 +284,10 @@ export default function ProjectDetail() {
               {project.content_md && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Content</h3>
-                  <div className="bg-gray-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-gray-50 rounded p-4 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {project.content_md}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}

@@ -1,6 +1,8 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 interface Cook {
   id: number;
@@ -323,10 +325,10 @@ export default function CookDetail() {
               {cook.recipe && cook.recipe.content_md && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Original Recipe</h3>
-                  <div className="bg-red-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-red-50 rounded p-4 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {cook.recipe.content_md}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -334,10 +336,10 @@ export default function CookDetail() {
               {cook.plan_md && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Plan Details</h3>
-                  <div className="bg-gray-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-gray-50 rounded p-4 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {cook.plan_md}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -345,10 +347,10 @@ export default function CookDetail() {
               {cook.outcome_md && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Outcome & Results</h3>
-                  <div className="bg-green-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-green-50 rounded p-4 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {cook.outcome_md}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}

@@ -34,13 +34,18 @@ interface Week {
   shops: Shop[];
 }
 
+interface ConversationItem {
+  type: "text" | "tool_call";
+  content?: string;
+  tool_name?: string;
+  tool_input?: any;
+  tool_output?: any;
+}
+
 interface ChatMessage {
   role: "user" | "assistant" | "system";
-  content: string;
-  toolsUsed?: Array<{
-    name: string;
-    result: any;
-  }>;
+  content?: string;
+  conversation?: ConversationItem[];
 }
 
 const chatSystemMessage: ChatMessage = {
@@ -82,7 +87,20 @@ export default function CookingHome() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messagesWithContext: [chatSystemMessage, ...updatedMessages],
+          messagesWithContext: [chatSystemMessage, ...updatedMessages.map(msg => {
+            // Convert assistant messages with conversation back to content format for API
+            if (msg.role === "assistant" && msg.conversation) {
+              const textItems = msg.conversation
+                .filter(item => item.type === "text" && item.content)
+                .map(item => item.content)
+                .join("\n\n");
+              return {
+                role: msg.role,
+                content: textItems || "I processed your request.",
+              };
+            }
+            return msg;
+          })],
         }),
       });
 
@@ -94,8 +112,7 @@ export default function CookingHome() {
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: data.content,
-        toolsUsed: data.toolsUsed,
+        conversation: data.conversation,
       };
 
       setChatMessages(prevMessages => [...prevMessages, assistantMessage]);
@@ -572,21 +589,48 @@ export default function CookingHome() {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {message.toolsUsed && message.toolsUsed.length > 0 && (
-                        <div className="mb-2 pb-2 border-b border-gray-300">
-                          <div className="text-xs text-gray-600 mb-1">
-                            🔧 Tools used:
-                          </div>
-                          {message.toolsUsed.map((tool, toolIndex) => (
-                            <div key={toolIndex} className="text-xs text-gray-600">
-                              • {tool.name}
+                      {/* Handle user messages with simple content */}
+                      {message.role === "user" && message.content && (
+                        <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      )}
+
+                      {/* Handle assistant messages with conversation items */}
+                      {message.role === "assistant" && message.conversation && (
+                        <div className="space-y-3">
+                          {message.conversation.map((item, itemIndex) => (
+                            <div key={itemIndex}>
+                              {item.type === "text" && item.content && (
+                                <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                                  {item.content}
+                                </ReactMarkdown>
+                              )}
+                              {item.type === "tool_call" && (
+                                <details className="bg-gray-50 rounded border p-2 cursor-pointer">
+                                  <summary className="text-xs font-medium text-gray-600">
+                                    🔧 Tool: {item.tool_name}
+                                  </summary>
+                                  <div className="mt-2 space-y-2">
+                                    <div>
+                                      <div className="text-xs font-medium text-gray-600 mb-1">Input:</div>
+                                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+                                        {JSON.stringify(item.tool_input, null, 2)}
+                                      </pre>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs font-medium text-gray-600 mb-1">Output:</div>
+                                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
+                                        {JSON.stringify(item.tool_output, null, 2)}
+                                      </pre>
+                                    </div>
+                                  </div>
+                                </details>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
-                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
-                        {message.content}
-                      </ReactMarkdown>
                     </div>
                   </div>
                 ))

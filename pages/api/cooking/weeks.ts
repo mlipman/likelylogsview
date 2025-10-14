@@ -1,49 +1,42 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import {PrismaClient} from "@prisma/client";
+import {weekService} from "../../../services/weeks";
 
-const prisma = new PrismaClient();
+async function handleGet(res: NextApiResponse) {
+  const weeks = await weekService.findManyWithRelations();
+  res.status(200).json(weeks);
+}
+
+async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+  const {year, week} = req.body;
+  const newWeek = await weekService.create({
+    year,
+    week,
+  });
+  res.status(201).json(newWeek);
+}
+
+async function handlePut(req: NextApiRequest, res: NextApiResponse) {
+  const {id, year, week} = req.body;
+  const updatedWeek = await weekService.update(id, {
+    year,
+    week,
+  });
+  res.status(200).json(updatedWeek);
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     switch (req.method) {
       case "GET":
-        const weeks = await prisma.week.findMany({
-          orderBy: {created_at: "desc"},
-          include: {
-            shops: true,
-            preps: {
-              include: {project: true},
-            },
-            cooks: {
-              include: {recipe: true},
-            },
-            starting_status: true,
-          },
-        });
-        res.status(200).json(weeks);
+        await handleGet(res);
         break;
 
       case "POST":
-        const {year, week} = req.body;
-        const newWeek = await prisma.week.create({
-          data: {
-            year,
-            week,
-          },
-        });
-        res.status(201).json(newWeek);
+        await handlePost(req, res);
         break;
 
       case "PUT":
-        const {id, year: updateYear, week: updateWeek} = req.body;
-        const updatedWeek = await prisma.week.update({
-          where: {id},
-          data: {
-            year: updateYear,
-            week: updateWeek,
-          },
-        });
-        res.status(200).json(updatedWeek);
+        await handlePut(req, res);
         break;
 
       default:
@@ -53,7 +46,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error("Week API error:", error);
     res.status(500).json({error: "Internal server error"});
-  } finally {
-    await prisma.$disconnect();
   }
 }

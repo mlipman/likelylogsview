@@ -2,8 +2,21 @@ import type {NextApiRequest, NextApiResponse} from "next";
 import {mcpProtocolError, mcpSuccess, mcpError, toolToSchema} from "./utils";
 import {recipeMcpTools} from "./recipes";
 import {projectMcpTools} from "./projects";
+import {weekMcpTools} from "./weeks";
+import {shopMcpTools} from "./shops";
+import {cookMcpTools} from "./cooks";
+import {prepMcpTools} from "./preps";
+import {startingStatusMcpTools} from "./starting-statuses";
 
-const allTools = [...projectMcpTools, ...recipeMcpTools];
+const allTools = [
+  ...projectMcpTools,
+  ...recipeMcpTools,
+  ...weekMcpTools,
+  ...shopMcpTools,
+  ...cookMcpTools,
+  ...prepMcpTools,
+  ...startingStatusMcpTools,
+];
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests for MCP protocol
   if (req.method !== "POST") {

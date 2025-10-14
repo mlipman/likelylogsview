@@ -1,6 +1,8 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 interface Shop {
   id: number;
@@ -367,10 +369,10 @@ export default function ShopDetail() {
               {shop.planned_items_text && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Original Shopping List</h3>
-                  <div className="bg-yellow-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-yellow-50 rounded p-4 prose max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {shop.planned_items_text}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -378,10 +380,10 @@ export default function ShopDetail() {
               {shop.planning_notes && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Planning Notes</h3>
-                  <div className="bg-gray-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-gray-50 rounded p-4 prose max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {shop.planning_notes}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -389,10 +391,10 @@ export default function ShopDetail() {
               {shop.purchased_items_text && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Items Actually Purchased</h3>
-                  <div className="bg-green-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-green-50 rounded p-4 prose max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {shop.purchased_items_text}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -400,10 +402,10 @@ export default function ShopDetail() {
               {shop.shopping_notes && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-3">Shopping Notes</h3>
-                  <div className="bg-blue-50 rounded p-4">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  <div className="bg-blue-50 rounded p-4 prose max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                       {shop.shopping_notes}
-                    </pre>
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
