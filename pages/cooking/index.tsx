@@ -87,20 +87,23 @@ export default function CookingHome() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messagesWithContext: [chatSystemMessage, ...updatedMessages.map(msg => {
-            // Convert assistant messages with conversation back to content format for API
-            if (msg.role === "assistant" && msg.conversation) {
-              const textItems = msg.conversation
-                .filter(item => item.type === "text" && item.content)
-                .map(item => item.content)
-                .join("\n\n");
-              return {
-                role: msg.role,
-                content: textItems || "I processed your request.",
-              };
-            }
-            return msg;
-          })],
+          messagesWithContext: [
+            chatSystemMessage,
+            ...updatedMessages.map(msg => {
+              // Convert assistant messages with conversation back to content format for API
+              if (msg.role === "assistant" && msg.conversation) {
+                const textItems = msg.conversation
+                  .filter(item => item.type === "text" && item.content)
+                  .map(item => item.content)
+                  .join("\n\n");
+                return {
+                  role: msg.role,
+                  content: textItems || "I processed your request.",
+                };
+              }
+              return msg;
+            }),
+          ],
         }),
       });
 
@@ -227,6 +230,11 @@ export default function CookingHome() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <img
+            src="/sgt_chef_logo.png"
+            alt="Sgt Chef Logo"
+            className="h-20 w-20 rounded-lg shadow-md object-cover mx-auto mb-4"
+          />
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Sgt Chef</h2>
           <p className="text-gray-600">Preparing your cooking dashboard...</p>
@@ -239,11 +247,23 @@ export default function CookingHome() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className={styles.pageHeader}>Sgt Chef</h1>
-          <p className="text-lg text-gray-600">
-            Your personal cooking assistant for planning and tracking meals
-          </p>
+        <div className="mb-8 flex items-center gap-6">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <img
+              src="/sgt_chef_logo.png"
+              alt="Sgt Chef Logo"
+              className="h-16 w-16 rounded-lg shadow-md object-cover"
+            />
+          </div>
+
+          {/* Title and Description */}
+          <div>
+            <h1 className={styles.pageHeader}>Sgt Chef</h1>
+            <p className="text-lg text-gray-600">
+              Your personal cooking assistant for planning and tracking meals
+            </p>
+          </div>
         </div>
 
         {/* Week Selector */}
@@ -471,7 +491,7 @@ export default function CookingHome() {
               <div
                 className={`${styles.iconContainer.base} ${styles.iconContainer.orange}`}
               >
-                <span className="text-2xl">🥘</span>
+                <span className="text-2xl">🔪</span>
               </div>
               <div>
                 <Link href="/cooking/preps">
@@ -613,13 +633,17 @@ export default function CookingHome() {
                                   </summary>
                                   <div className="mt-2 space-y-2">
                                     <div>
-                                      <div className="text-xs font-medium text-gray-600 mb-1">Input:</div>
+                                      <div className="text-xs font-medium text-gray-600 mb-1">
+                                        Input:
+                                      </div>
                                       <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
                                         {JSON.stringify(item.tool_input, null, 2)}
                                       </pre>
                                     </div>
                                     <div>
-                                      <div className="text-xs font-medium text-gray-600 mb-1">Output:</div>
+                                      <div className="text-xs font-medium text-gray-600 mb-1">
+                                        Output:
+                                      </div>
                                       <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
                                         {JSON.stringify(item.tool_output, null, 2)}
                                       </pre>
