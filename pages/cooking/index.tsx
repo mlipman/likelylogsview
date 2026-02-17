@@ -325,20 +325,26 @@ export default function CookingHome() {
               </Link>
             </div>
             {currentWeek.plan_md && (
-              <div className="text-gray-700 whitespace-pre-wrap mb-4">{currentWeek.plan_md}</div>
+              <div className="prose prose-sm max-w-none mb-4">
+                <ReactMarkdown remarkPlugins={[remarkBreaks]}>{currentWeek.plan_md}</ReactMarkdown>
+              </div>
             )}
             {(currentWeek.carryover_items_md || currentWeek.missing_staples_md) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {currentWeek.carryover_items_md && (
                   <div className="bg-green-50 rounded-lg p-4">
                     <h4 className="text-sm font-medium text-green-800 mb-2">Carryover Ingredients</h4>
-                    <div className="text-sm text-green-900 whitespace-pre-wrap">{currentWeek.carryover_items_md}</div>
+                    <div className="text-sm text-green-900 prose prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{currentWeek.carryover_items_md}</ReactMarkdown>
+                    </div>
                   </div>
                 )}
                 {currentWeek.missing_staples_md && (
                   <div className="bg-amber-50 rounded-lg p-4">
                     <h4 className="text-sm font-medium text-amber-800 mb-2">Missing Staples</h4>
-                    <div className="text-sm text-amber-900 whitespace-pre-wrap">{currentWeek.missing_staples_md}</div>
+                    <div className="text-sm text-amber-900 prose prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{currentWeek.missing_staples_md}</ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>

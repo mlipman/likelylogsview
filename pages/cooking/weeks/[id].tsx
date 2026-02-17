@@ -1,6 +1,8 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import {formatWeekRange} from "../../../utils/weekUtils";
 
 interface Week {
@@ -177,43 +179,12 @@ export default function WeekDetail() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label
-                    htmlFor="year"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Year <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="year"
-                    name="year"
-                    value={formData.year}
-                    onChange={handleInputChange}
-                    required
-                    min="2020"
-                    max="2030"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                  <span className="block text-sm font-medium text-gray-700 mb-2">Year</span>
+                  <p className="text-gray-900">{week.year}</p>
                 </div>
-
                 <div>
-                  <label
-                    htmlFor="week"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Week Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="week"
-                    name="week"
-                    value={formData.week}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                    max="53"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                  <span className="block text-sm font-medium text-gray-700 mb-2">Week Number</span>
+                  <p className="text-gray-900">{week.week}</p>
                 </div>
               </div>
             </div>
@@ -318,7 +289,9 @@ export default function WeekDetail() {
             {week.plan_md && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Week Plan</h3>
-                <div className="text-gray-700 whitespace-pre-wrap">{week.plan_md}</div>
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkBreaks]}>{week.plan_md}</ReactMarkdown>
+                </div>
               </div>
             )}
 
@@ -329,13 +302,17 @@ export default function WeekDetail() {
                   {week.carryover_items_md && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Carryover Ingredients</h4>
-                      <div className="text-gray-700 whitespace-pre-wrap">{week.carryover_items_md}</div>
+                      <div className="text-gray-700 prose prose-sm max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkBreaks]}>{week.carryover_items_md}</ReactMarkdown>
+                      </div>
                     </div>
                   )}
                   {week.missing_staples_md && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Missing Staples</h4>
-                      <div className="text-gray-700 whitespace-pre-wrap">{week.missing_staples_md}</div>
+                      <div className="text-gray-700 prose prose-sm max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkBreaks]}>{week.missing_staples_md}</ReactMarkdown>
+                      </div>
                     </div>
                   )}
                 </div>
