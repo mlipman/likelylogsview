@@ -12,6 +12,11 @@ export default function NewRecipe() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // NYT Import state
+  const [nytUrl, setNytUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -44,6 +49,31 @@ export default function NewRecipe() {
     }
   };
 
+  const handleImport = async () => {
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      const response = await fetch("/api/cooking/recipes/import", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({url: nytUrl}),
+      });
+
+      if (response.ok) {
+        const recipe = await response.json();
+        router.push(`/cooking/recipes/${recipe.id}`);
+      } else {
+        const data = await response.json();
+        setImportError(data.error || "Failed to import recipe");
+      }
+    } catch (error) {
+      setImportError("Network error. Check that the dev server is running.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -57,6 +87,47 @@ export default function NewRecipe() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Recipe</h1>
           <p className="text-gray-600">Create a new recipe for your collection</p>
+        </div>
+
+        {/* NYT Cooking Import */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Import from NYT Cooking
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Paste a NYT Cooking recipe URL to automatically import it.
+          </p>
+          <div className="flex gap-3">
+            <input
+              type="url"
+              value={nytUrl}
+              onChange={e => setNytUrl(e.target.value)}
+              placeholder="https://cooking.nytimes.com/recipes/..."
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={isImporting || !nytUrl}
+              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {isImporting ? "Importing..." : "Import"}
+            </button>
+          </div>
+          {importError && (
+            <p className="mt-3 text-sm text-red-600">{importError}</p>
+          )}
+        </div>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-gray-50 px-4 text-sm text-gray-500">
+              or add manually
+            </span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

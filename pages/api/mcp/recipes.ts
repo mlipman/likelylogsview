@@ -3,6 +3,7 @@
  */
 
 import {recipeService, recipeToString, RecipeContent} from "../../../services/recipes";
+import {importNytRecipe} from "../../../services/nytImport";
 import {McpTool, stringArgument, idArgument} from "./utils";
 
 const viewAllRecipes: McpTool = {
@@ -89,9 +90,31 @@ const deleteRecipe: McpTool = {
   },
 };
 
+const importNytRecipeTool: McpTool = {
+  name: "import_nyt_recipe",
+  description:
+    "Import a recipe from NYT Cooking by URL. Fetches the page, extracts structured recipe data, and creates a new recipe in the Sgt Chef app.",
+  arguments: [
+    stringArgument("url", "NYT Cooking recipe URL (https://cooking.nytimes.com/recipes/...)", true),
+  ],
+  handler: async (args: {url: string}): Promise<string> => {
+    const {url} = args;
+    const importedData = await importNytRecipe(url);
+    const data: RecipeContent = {
+      title: importedData.title,
+      content_md: importedData.content_md,
+      source: importedData.source,
+      url: importedData.url,
+    };
+    const newRecipe = await recipeService.create(data);
+    return `Successfully imported and created recipe:\n\n${recipeToString(newRecipe)}`;
+  },
+};
+
 export const recipeMcpTools: McpTool[] = [
   viewAllRecipes,
   createRecipe,
   updateRecipe,
   deleteRecipe,
+  importNytRecipeTool,
 ];
