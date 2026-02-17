@@ -63,14 +63,18 @@ model Week {
   updated_at DateTime @updatedAt
   year Int
   week Int
-  //start_date DateTime // Saturday of the week
-  //end_date DateTime   // Friday of the week
-  
+
+  // Merged from StartingStatus - ingredient context for the week
+  carryover_items_md String? // Available ingredients/leftovers from previous weeks
+  missing_staples_md String? // Staples that are low/out
+
+  // Strategic planning notes - updated via chat, read by future chats
+  plan_md String?
+
   shops Shop[]
   preps Prep[]
   cooks Cook[]
-  starting_status StartingStatus?
-  
+
   @@unique([year, week])
 }
 
@@ -157,20 +161,3 @@ model Cook {
   recipe Recipe? @relation(fields: [recipe_id], references: [id], onDelete: SetNull)
 }
 
-model StartingStatus {
-  id Int @id @default(autoincrement())
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  week_id Int @unique
-  
-  // Carryover assets from previous weeks
-  carryover_items_md String? // Available ingredients/leftovers
-  
-  // Deficiencies in usual staples
-  missing_staples_md String? // Staples that are low/out
-  
-  // General notes about the week's starting state
-  notes_md String?
-  
-  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
-}

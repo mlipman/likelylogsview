@@ -1,8 +1,7 @@
 // import { useRouter } from "next/router";
 import Link from "next/link";
 import {FormEvent, KeyboardEvent, useEffect, useState} from "react";
-import {addDays, format, setISOWeek, startOfISOWeek} from "date-fns";
-import {getCurrentWeek} from "../../utils/weekUtils";
+import {getCurrentWeek, formatWeekRange} from "../../utils/weekUtils";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
@@ -29,6 +28,9 @@ interface Week {
   id: number;
   year: number;
   week: number;
+  carryover_items_md: string | null;
+  missing_staples_md: string | null;
+  plan_md: string | null;
   cooks: Cook[];
   preps: Prep[];
   shops: Shop[];
@@ -47,12 +49,6 @@ interface ChatMessage {
   content?: string;
   conversation?: ConversationItem[];
 }
-
-const chatSystemMessage: ChatMessage = {
-  role: "system",
-  content:
-    "You are Sgt Chef, a helpful cooking assistant who gives concise, practical advice about meal planning, prep, and grocery shopping.",
-};
 
 export default function CookingHome() {
   // const router = useRouter();
@@ -87,23 +83,21 @@ export default function CookingHome() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messagesWithContext: [
-            chatSystemMessage,
-            ...updatedMessages.map(msg => {
-              // Convert assistant messages with conversation back to content format for API
-              if (msg.role === "assistant" && msg.conversation) {
-                const textItems = msg.conversation
-                  .filter(item => item.type === "text" && item.content)
-                  .map(item => item.content)
-                  .join("\n\n");
-                return {
-                  role: msg.role,
-                  content: textItems || "I processed your request.",
-                };
-              }
-              return msg;
-            }),
-          ],
+          week_id: currentWeek?.id,
+          messagesWithContext: updatedMessages.map(msg => {
+            // Convert assistant messages with conversation back to content format for API
+            if (msg.role === "assistant" && msg.conversation) {
+              const textItems = msg.conversation
+                .filter(item => item.type === "text" && item.content)
+                .map(item => item.content)
+                .join("\n\n");
+              return {
+                role: msg.role,
+                content: textItems || "I processed your request.",
+              };
+            }
+            return msg;
+          }),
         }),
       });
 
@@ -219,13 +213,6 @@ export default function CookingHome() {
     }
   };
 
-  const formatWeekRange = (week: Week) => {
-    const date = setISOWeek(new Date(week.year, 0, 4), week.week);
-    const start = addDays(startOfISOWeek(date), -2);
-    const end = addDays(start, 6);
-    return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
-  };
-
   if (weekLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -273,7 +260,7 @@ export default function CookingHome() {
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Current Week</h2>
                 {currentWeek ? (
-                  <p className="text-gray-600">{formatWeekRange(currentWeek)}</p>
+                  <p className="text-gray-600">{formatWeekRange(currentWeek.year, currentWeek.week)}</p>
                 ) : (
                   <p className="text-gray-600">
                     Week {currentWeekData.week}, {currentWeekData.year}
@@ -325,6 +312,39 @@ export default function CookingHome() {
             </div>
           )}
         </div>
+
+        {currentWeek && (currentWeek.plan_md || currentWeek.carryover_items_md || currentWeek.missing_staples_md) && (
+          <div className={styles.cardMb}>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className={styles.sectionHeader + " !mb-0"}>Week Plan</h3>
+              <Link
+                href={`/cooking/weeks/${currentWeek.id}?edit=1`}
+                className="text-sm text-purple-600 hover:text-purple-800"
+              >
+                Edit
+              </Link>
+            </div>
+            {currentWeek.plan_md && (
+              <div className="text-gray-700 whitespace-pre-wrap mb-4">{currentWeek.plan_md}</div>
+            )}
+            {(currentWeek.carryover_items_md || currentWeek.missing_staples_md) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentWeek.carryover_items_md && (
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-green-800 mb-2">Carryover Ingredients</h4>
+                    <div className="text-sm text-green-900 whitespace-pre-wrap">{currentWeek.carryover_items_md}</div>
+                  </div>
+                )}
+                {currentWeek.missing_staples_md && (
+                  <div className="bg-amber-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-amber-800 mb-2">Missing Staples</h4>
+                    <div className="text-sm text-amber-900 whitespace-pre-wrap">{currentWeek.missing_staples_md}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {currentWeek && (
           <>

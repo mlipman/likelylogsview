@@ -185,6 +185,7 @@ export default function CookDetail() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Cook Details</h2>
 
+              {/* Future: could split into plan/act editing phases */}
               <div className="space-y-4">
                 <div>
                   <label

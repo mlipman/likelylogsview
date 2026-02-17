@@ -7,19 +7,25 @@ async function handleGet(res: NextApiResponse) {
 }
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
-  const {year, week} = req.body;
+  const {year, week, carryover_items_md, missing_staples_md, plan_md} = req.body;
   const newWeek = await weekService.create({
     year,
     week,
+    carryover_items_md: carryover_items_md || null,
+    missing_staples_md: missing_staples_md || null,
+    plan_md: plan_md || null,
   });
   res.status(201).json(newWeek);
 }
 
 async function handlePut(req: NextApiRequest, res: NextApiResponse) {
-  const {id, year, week} = req.body;
+  const {id, year, week, carryover_items_md, missing_staples_md, plan_md} = req.body;
   const updatedWeek = await weekService.update(id, {
     year,
     week,
+    carryover_items_md: carryover_items_md ?? null,
+    missing_staples_md: missing_staples_md ?? null,
+    plan_md: plan_md ?? null,
   });
   res.status(200).json(updatedWeek);
 }

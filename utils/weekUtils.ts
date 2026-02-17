@@ -1,4 +1,4 @@
-import {getISOWeek, getISOWeekYear} from "date-fns";
+import {addDays, format, getISOWeek, getISOWeekYear, setISOWeek, startOfISOWeek} from "date-fns";
 
 // Helper function to get current week number (Saturday-Friday weeks)
 export const getCurrentWeek = (): {year: number; week: number} => {
@@ -18,4 +18,12 @@ export const getCurrentWeek = (): {year: number; week: number} => {
   const year = getISOWeekYear(targetDate);
   const week = getISOWeek(targetDate);
   return {year, week};
+};
+
+// Format a week's Saturday-Friday date range as "MMM d - MMM d"
+export const formatWeekRange = (year: number, week: number): string => {
+  const date = setISOWeek(new Date(year, 0, 4), week);
+  const start = addDays(startOfISOWeek(date), -2); // Saturday
+  const end = addDays(start, 6); // Friday
+  return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
 };

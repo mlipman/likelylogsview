@@ -78,6 +78,46 @@ export class WeekService {
     });
   }
 
+  findByIdWithRelations(id: number) {
+    return this.prisma.week.findUnique({
+      where: {id},
+      include: {
+        cooks: {
+          select: {
+            id: true,
+            plan_md: true,
+            outcome_md: true,
+            recipe: {
+              select: {
+                title: true,
+              },
+            },
+          },
+        },
+        preps: {
+          select: {
+            id: true,
+            plan_md: true,
+            outcome_md: true,
+            project: {
+              select: {
+                title: true,
+              },
+            },
+          },
+        },
+        shops: {
+          select: {
+            id: true,
+            store_name: true,
+            planned_items_text: true,
+            purchased_items_text: true,
+          },
+        },
+      },
+    });
+  }
+
   create(data: WeekContent): Promise<Week> {
     return this.prisma.week.create({
       data,
@@ -120,6 +160,9 @@ export function weekToString(week: Week): string {
   const parts = [`**Week ${week.week} of ${week.year}**`];
 
   parts.push(`ID: ${week.id}`);
+  if (week.carryover_items_md) parts.push(`Carryover: ${week.carryover_items_md}`);
+  if (week.missing_staples_md) parts.push(`Missing staples: ${week.missing_staples_md}`);
+  if (week.plan_md) parts.push(`Plan: ${week.plan_md}`);
   parts.push(`Created: ${week.created_at}`);
   parts.push(`Updated: ${week.updated_at}`);
   parts.push('---');

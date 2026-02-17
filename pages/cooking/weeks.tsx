@@ -1,4 +1,5 @@
 import {useState, useEffect} from "react";
+import {useRouter} from "next/router";
 import Link from "next/link";
 
 interface Week {
@@ -7,13 +8,16 @@ interface Week {
   updated_at: string;
   year: number;
   week: number;
+  carryover_items_md: string | null;
+  missing_staples_md: string | null;
+  plan_md: string | null;
   shops: any[];
   preps: any[];
   cooks: any[];
-  starting_status: any | null;
 }
 
 export default function WeeksList() {
+  const router = useRouter();
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -87,14 +91,11 @@ export default function WeeksList() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {weeks.map((week) => (
-                    <tr key={week.id} className="hover:bg-gray-50">
+                    <tr key={week.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/cooking/weeks/${week.id}`)}>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {week.year} - Week {week.week}
@@ -115,9 +116,9 @@ export default function WeeksList() {
                             <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
                               {week.cooks.length} cooks
                             </span>
-                            {week.starting_status && (
+                            {week.plan_md && (
                               <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                                has status
+                                has plan
                               </span>
                             )}
                           </div>
@@ -125,14 +126,6 @@ export default function WeeksList() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(week.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/cooking/weeks/${week.id}`}
-                          className="text-purple-600 hover:text-purple-900 mr-4"
-                        >
-                          View/Edit
-                        </Link>
                       </td>
                     </tr>
                   ))}

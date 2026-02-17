@@ -29,6 +29,8 @@ export default function ShopDetail() {
   const {id} = router.query;
   const [shop, setShop] = useState<Shop | null>(null);
   const [formData, setFormData] = useState({
+    planned_items_text: "",
+    planning_notes: "",
     occurred_at: "",
     purchased_items_text: "",
     store_name: "",
@@ -52,6 +54,8 @@ export default function ShopDetail() {
         if (foundShop) {
           setShop(foundShop);
           setFormData({
+            planned_items_text: foundShop.planned_items_text || "",
+            planning_notes: foundShop.planning_notes || "",
             occurred_at: foundShop.occurred_at ? foundShop.occurred_at.split('T')[0] : "",
             purchased_items_text: foundShop.purchased_items_text || "",
             store_name: foundShop.store_name || "",
@@ -70,6 +74,12 @@ export default function ShopDetail() {
     fetchShop();
   }, [id]);
 
+  useEffect(() => {
+    if (router.query.edit) {
+      setIsEditing(true);
+    }
+  }, [router.query.edit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -77,6 +87,8 @@ export default function ShopDetail() {
     try {
       const payload = {
         id: parseInt(id as string),
+        planned_items_text: formData.planned_items_text || null,
+        planning_notes: formData.planning_notes || null,
         occurred_at: formData.occurred_at || null,
         purchased_items_text: formData.purchased_items_text || null,
         store_name: formData.store_name || null,
@@ -117,6 +129,8 @@ export default function ShopDetail() {
   const handleCancel = () => {
     if (shop) {
       setFormData({
+        planned_items_text: shop.planned_items_text || "",
+        planning_notes: shop.planning_notes || "",
         occurred_at: shop.occurred_at ? shop.occurred_at.split('T')[0] : "",
         purchased_items_text: shop.purchased_items_text || "",
         store_name: shop.store_name || "",
@@ -183,7 +197,44 @@ export default function ShopDetail() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Shopping Details</h2>
 
+              {/* Future: could split into plan/act editing phases */}
               <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="planned_items_text"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Shopping List (Planned Items)
+                  </label>
+                  <textarea
+                    id="planned_items_text"
+                    name="planned_items_text"
+                    value={formData.planned_items_text}
+                    onChange={handleInputChange}
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="List what you plan to buy..."
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="planning_notes"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Planning Notes
+                  </label>
+                  <textarea
+                    id="planning_notes"
+                    name="planning_notes"
+                    value={formData.planning_notes}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Notes about the shopping plan, meal ideas driving the list, etc."
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label

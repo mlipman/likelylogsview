@@ -21,7 +21,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const week = await prisma.week.findUnique({
       where: {id: week_id},
       include: {
-        starting_status: true,
         shops: true,
         preps: true,
         cooks: true,
@@ -42,11 +41,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       "You are Sgt Chef, a helpful cooking assistant. Based on the context below, suggest what the user should cook.",
       "",
       "CURRENT WEEK CONTEXT:",
-      week?.starting_status?.carryover_items_md
-        ? `Available ingredients: ${week.starting_status.carryover_items_md}`
+      week?.carryover_items_md
+        ? `Available ingredients: ${week.carryover_items_md}`
         : "",
-      week?.starting_status?.missing_staples_md
-        ? `Missing staples: ${week.starting_status.missing_staples_md}`
+      week?.missing_staples_md
+        ? `Missing staples: ${week.missing_staples_md}`
         : "",
       "",
       "RECENT SHOPPING:",
@@ -100,7 +99,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       suggestion,
       context_used: {
         week_id,
-        has_starting_status: !!week?.starting_status,
+        has_carryover: !!week?.carryover_items_md,
+        has_missing_staples: !!week?.missing_staples_md,
         recent_shops: week?.shops?.length || 0,
         recent_cooks: week?.cooks?.length || 0,
         available_recipes: recipes.length,

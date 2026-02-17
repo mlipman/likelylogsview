@@ -1,4 +1,5 @@
 import {useState, useEffect} from "react";
+import {useRouter} from "next/router";
 import Link from "next/link";
 
 interface Prep {
@@ -23,6 +24,7 @@ interface Prep {
 }
 
 export default function PrepsList() {
+  const router = useRouter();
   const [preps, setPreps] = useState<Prep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -99,14 +101,11 @@ export default function PrepsList() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {preps.map((prep) => (
-                    <tr key={prep.id} className="hover:bg-gray-50">
+                    <tr key={prep.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/cooking/preps/${prep.id}`)}>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {prep.week.year} - Week {prep.week.week}
@@ -138,18 +137,10 @@ export default function PrepsList() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {prep.occurred_at 
+                        {prep.occurred_at
                           ? new Date(prep.occurred_at).toLocaleDateString()
                           : new Date(prep.created_at).toLocaleDateString()
                         }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/cooking/preps/${prep.id}`}
-                          className="text-orange-600 hover:text-orange-900 mr-4"
-                        >
-                          View/Edit
-                        </Link>
                       </td>
                     </tr>
                   ))}

@@ -70,6 +70,12 @@ export default function PrepDetail() {
     fetchPrep();
   }, [id]);
 
+  useEffect(() => {
+    if (router.query.edit) {
+      setIsEditing(true);
+    }
+  }, [router.query.edit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -179,6 +185,7 @@ export default function PrepDetail() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Prep Details</h2>
 
+              {/* Future: could split into plan/act editing phases */}
               <div className="space-y-4">
                 <div>
                   <label

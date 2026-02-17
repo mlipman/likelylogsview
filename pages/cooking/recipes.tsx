@@ -1,4 +1,5 @@
 import {useState, useEffect} from "react";
+import {useRouter} from "next/router";
 import Link from "next/link";
 
 interface Recipe {
@@ -12,6 +13,7 @@ interface Recipe {
 }
 
 export default function RecipesList() {
+  const router = useRouter();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,14 +87,11 @@ export default function RecipesList() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {recipes.map((recipe) => (
-                    <tr key={recipe.id} className="hover:bg-gray-50">
+                    <tr key={recipe.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/cooking/recipes/${recipe.id}`)}>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {recipe.title}
@@ -114,6 +113,7 @@ export default function RecipesList() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 hover:text-blue-800"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             View Source
                           </a>
@@ -121,14 +121,6 @@ export default function RecipesList() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(recipe.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/cooking/recipes/${recipe.id}`}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
-                        >
-                          View/Edit
-                        </Link>
                       </td>
                     </tr>
                   ))}

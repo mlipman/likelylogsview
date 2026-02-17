@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import {useRouter} from "next/router";
 import Link from "next/link";
+import {formatWeekRange} from "../../../utils/weekUtils";
 
 interface Week {
   id: number;
@@ -8,10 +9,12 @@ interface Week {
   updated_at: string;
   year: number;
   week: number;
+  carryover_items_md: string | null;
+  missing_staples_md: string | null;
+  plan_md: string | null;
   shops: any[];
   preps: any[];
   cooks: any[];
-  starting_status: any | null;
 }
 
 export default function WeekDetail() {
@@ -21,6 +24,9 @@ export default function WeekDetail() {
   const [formData, setFormData] = useState({
     year: "",
     week: "",
+    carryover_items_md: "",
+    missing_staples_md: "",
+    plan_md: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +46,9 @@ export default function WeekDetail() {
           setFormData({
             year: foundWeek.year.toString(),
             week: foundWeek.week.toString(),
+            carryover_items_md: foundWeek.carryover_items_md || "",
+            missing_staples_md: foundWeek.missing_staples_md || "",
+            plan_md: foundWeek.plan_md || "",
           });
         }
       } catch (error) {
@@ -52,6 +61,12 @@ export default function WeekDetail() {
     fetchWeek();
   }, [id]);
 
+  useEffect(() => {
+    if (router.query.edit) {
+      setIsEditing(true);
+    }
+  }, [router.query.edit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -61,6 +76,9 @@ export default function WeekDetail() {
         id: parseInt(id as string),
         year: parseInt(formData.year),
         week: parseInt(formData.week),
+        carryover_items_md: formData.carryover_items_md || null,
+        missing_staples_md: formData.missing_staples_md || null,
+        plan_md: formData.plan_md || null,
       };
 
       const response = await fetch("/api/cooking/weeks", {
@@ -73,7 +91,7 @@ export default function WeekDetail() {
 
       if (response.ok) {
         const updatedWeek = await response.json();
-        setWeek({...week!, year: updatedWeek.year, week: updatedWeek.week});
+        setWeek({...week!, ...updatedWeek});
         setIsEditing(false);
       } else {
         console.error("Failed to update week");
@@ -85,7 +103,7 @@ export default function WeekDetail() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
     setFormData(prev => ({...prev, [name]: value}));
   };
@@ -95,6 +113,9 @@ export default function WeekDetail() {
       setFormData({
         year: week.year.toString(),
         week: week.week.toString(),
+        carryover_items_md: week.carryover_items_md || "",
+        missing_staples_md: week.missing_staples_md || "",
+        plan_md: week.plan_md || "",
       });
     }
     setIsEditing(false);
@@ -136,7 +157,7 @@ export default function WeekDetail() {
               {isEditing ? "Edit Week" : `${week.year} - Week ${week.week}`}
             </h1>
             <p className="text-gray-600">
-              {isEditing ? "Update week details" : "Week details and activity"}
+              {formatWeekRange(week.year, week.week)}
             </p>
           </div>
           {!isEditing && (
@@ -197,6 +218,69 @@ export default function WeekDetail() {
               </div>
             </div>
 
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Planning</h2>
+
+              <div className="space-y-6">
+                <div>
+                  <label
+                    htmlFor="plan_md"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Week Plan
+                  </label>
+                  <textarea
+                    id="plan_md"
+                    name="plan_md"
+                    value={formData.plan_md}
+                    onChange={handleInputChange}
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Strategic planning notes for the week..."
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Updated by chat conversations. Captures meal ideas, decisions, and strategy.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="carryover_items_md"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Carryover Ingredients
+                  </label>
+                  <textarea
+                    id="carryover_items_md"
+                    name="carryover_items_md"
+                    value={formData.carryover_items_md}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Available ingredients and leftovers from previous weeks..."
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="missing_staples_md"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Missing Staples
+                  </label>
+                  <textarea
+                    id="missing_staples_md"
+                    name="missing_staples_md"
+                    value={formData.missing_staples_md}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Staples that are low or out of stock..."
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-between items-center">
               <button
                 type="button"
@@ -231,9 +315,36 @@ export default function WeekDetail() {
               </div>
             </div>
 
+            {week.plan_md && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Week Plan</h3>
+                <div className="text-gray-700 whitespace-pre-wrap">{week.plan_md}</div>
+              </div>
+            )}
+
+            {(week.carryover_items_md || week.missing_staples_md) && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingredient Status</h3>
+                <div className="space-y-4">
+                  {week.carryover_items_md && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Carryover Ingredients</h4>
+                      <div className="text-gray-700 whitespace-pre-wrap">{week.carryover_items_md}</div>
+                    </div>
+                  )}
+                  {week.missing_staples_md && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Missing Staples</h4>
+                      <div className="text-gray-700 whitespace-pre-wrap">{week.missing_staples_md}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Activity Summary</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-blue-600">{week.shops.length}</div>
                   <div className="text-sm text-blue-800">Shopping trips</div>
@@ -245,12 +356,6 @@ export default function WeekDetail() {
                 <div className="bg-red-50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-red-600">{week.cooks.length}</div>
                   <div className="text-sm text-red-800">Cooking sessions</div>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-600">
-                    {week.starting_status ? "1" : "0"}
-                  </div>
-                  <div className="text-sm text-green-800">Starting status</div>
                 </div>
               </div>
             </div>
