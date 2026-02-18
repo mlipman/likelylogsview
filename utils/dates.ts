@@ -12,6 +12,11 @@ import {
   setISOWeek,
   setISOWeekYear,
   addWeeks,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday,
 } from "date-fns";
 
 export type Period = "month" | "week" | "day";
@@ -181,4 +186,84 @@ export const makeHeader = (
   } else {
     return null;
   }
+};
+
+// --- Calendar grid utilities ---
+
+export interface CalendarDay {
+  date: Date;
+  dayOfMonth: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  dayInstanceNum: string;
+}
+
+export interface CalendarWeekRow {
+  isoWeekYear: number;
+  isoWeek: number;
+  weekInstanceNum: string;
+  days: CalendarDay[];
+}
+
+/**
+ * Builds a calendar grid for the given year/month (1-indexed month).
+ * Weeks start on Monday (ISO standard). Includes padding days from
+ * adjacent months to fill complete rows.
+ */
+export const buildCalendarGrid = (year: number, month: number): CalendarWeekRow[] => {
+  const monthDate = new Date(year, month - 1);
+  const monthStart = startOfMonth(monthDate);
+  const monthEnd = endOfMonth(monthDate);
+
+  // Find the Monday on or before the first day of the month
+  const firstMonday = startOfISOWeek(monthStart);
+  // Find the Sunday on or after the last day of the month
+  const lastDayWeekStart = startOfISOWeek(monthEnd);
+  const lastSunday = addDays(lastDayWeekStart, 6);
+
+  const allDays = eachDayOfInterval({start: firstMonday, end: lastSunday});
+
+  const rows: CalendarWeekRow[] = [];
+  for (let i = 0; i < allDays.length; i += 7) {
+    const weekDays = allDays.slice(i, i + 7);
+    const monday = weekDays[0];
+    rows.push({
+      isoWeekYear: getISOWeekYear(monday),
+      isoWeek: getISOWeek(monday),
+      weekInstanceNum: dateToInstanceNum(monday, "week"),
+      days: weekDays.map(day => ({
+        date: day,
+        dayOfMonth: getDate(day),
+        isCurrentMonth: isSameMonth(day, monthDate),
+        isToday: isToday(day),
+        dayInstanceNum: dateToInstanceNum(day, "day"),
+      })),
+    });
+  }
+  return rows;
+};
+
+/**
+ * Returns all instance keys needed for a batch session existence check
+ * for the given calendar month. Includes day instances for current-month
+ * days only, week instances for all displayed weeks, and the month instance.
+ */
+export const calendarInstanceKeys = (year: number, month: number): string[] => {
+  const grid = buildCalendarGrid(year, month);
+  const keys: string[] = [];
+
+  // Month instance
+  keys.push(`month${String(year).padStart(4, "0")}${String(month).padStart(2, "0")}`);
+
+  for (const row of grid) {
+    // Week instance
+    keys.push(`week${row.weekInstanceNum}`);
+    // Day instances (current month only)
+    for (const day of row.days) {
+      if (day.isCurrentMonth) {
+        keys.push(`day${day.dayInstanceNum}`);
+      }
+    }
+  }
+  return keys;
 };

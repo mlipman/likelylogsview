@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Our plan is in PLAN.md
-
 ## Development Commands
 
 - **Start development server**: `npm run dev` (runs on port 3000)
@@ -20,7 +18,10 @@ Our plan is in PLAN.md
 ## Architecture Overview
 
 This is a Next.js application with a PostgreSQL database using Prisma ORM.
-The current focus for this development session is the cooking app including the pages and api endpoints under /cooking
+The app has two main areas of active development:
+
+1. **Cooking Hub** (`/cooking`) — the Sgt Chef meal planning app (recipes, projects, shops, preps, cooks, weeks)
+2. **Session Logs** (`/session`, `/calendar`) — chat-style log entries keyed by time period (day/week/month), with a calendar overview for navigation
 
 ### Key Components:
 
@@ -42,6 +43,7 @@ The current focus for this development session is the cooking app including the 
 - `DEV_DB_URL`: PostgreSQL database connection string
 - `OPEN_AI_KEY`: OpenAI API key for chat functionality
 - Cloudinary configuration for image handling
+- others
 
 ### Important Context:
 
@@ -183,6 +185,7 @@ const createRecipe: McpTool = {
 **IMPORTANT**: This application implements two separate tool calling systems that share the same handler functions:
 
 **1. Real MCP Server (`/api/mcp`)**
+
 - ✅ **Implements full MCP protocol** (JSON-RPC 2.0)
 - ✅ **External MCP clients can connect** (e.g., `claude mcp add --transport http`)
 - ✅ **Follows MCP specification** completely
@@ -194,6 +197,7 @@ MCP Client -> /api/mcp -> toolToSchema() -> McpResponse (JSON-RPC 2.0)
 ```
 
 **2. Internal Anthropic Tool Calling (`/api/chat`)**
+
 - ❌ **NOT an MCP server**
 - ✅ **Uses Anthropic's native tool calling API**
 - ✅ **Reuses same JavaScript handler functions**
@@ -206,11 +210,13 @@ Anthropic API -> suggests tool -> tool.handler() directly -> continues conversat
 
 **Shared Components:**
 Both systems use the exact same:
+
 - Tool handler functions (`createRecipe.handler`, `viewAllRecipes.handler`, etc.)
 - Service layer calls (`recipeService.create()`, etc.)
 - Business logic and validation
 
 **Benefits:**
+
 - ✅ **Code reuse**: Same business logic for both systems
 - ✅ **External compatibility**: Real MCP for external integrations
 - ✅ **Internal efficiency**: Direct function calls for chat interface
@@ -234,6 +240,32 @@ Here's a sample to match the linter.
         res.status(201).json(newRecipe);
         break;
 ```
+
+### Session Logs & Calendar
+
+Sessions are chat-style log entries stored in a `session` table, keyed by instance strings like `day2025049`, `week202507`, `month202502`. The instance string is a concatenation of the period and an instanceNum (derived from `dateToInstanceNum` in `utils/dates.ts`).
+
+**Key files:**
+
+- `utils/dates.ts` — All date/instance logic: `dateToInstanceNum`, `buildCalendarGrid`, `calendarInstanceKeys`, navigation helpers
+- `pages/session/[period]/[instanceNum].tsx` — Individual session page with chat interface
+- `pages/calendar.tsx` — Monthly calendar overview with session existence dots
+- `pages/api/session.ts` — CRUD for individual sessions (GET by instance, POST upsert)
+- `pages/api/sessions-index.ts` — Batch existence check (GET with comma-separated instances query param)
+
+**Calendar page pattern:**
+
+- All components co-located in one file (matches `cooking/index.tsx` pattern)
+- Single API call per month to check which sessions exist, stored as a `Set<string>` for O(1) lookup
+- Lazy-loads session content only when a dot is clicked (modal)
+- ISO week standard (Monday start) throughout
+
+### Implementation Notes
+
+- **Always run `npm run build`** after changes — the TypeScript compiler catches unused variables and type errors that `npm run lint` does not (lint only runs ESLint rules, build runs full `tsc`)
+- **Use the shared prisma singleton** from `lib/prisma.ts` (`import prisma from "@/lib/prisma"`) for new API endpoints, not `new PrismaClient()`
+- **Simpler API endpoints** (like `sessions-index.ts`) that don't involve entity CRUD don't need the full service layer pattern — a direct prisma call in the handler is fine
+- **Inline Tailwind** is the preferred styling approach for new pages (not CSS modules), matching the cooking pages convention
 
 ### sgt chef overview and notes
 
