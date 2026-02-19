@@ -29,6 +29,9 @@ const Home: FC = () => {
         <button className={styles.button} onClick={() => router.push("/cooking")}>
           Cooking Hub
         </button>
+        <button className={styles.button} onClick={() => router.push("/coach")}>
+          Coach
+        </button>
       </div>
     </div>
   );

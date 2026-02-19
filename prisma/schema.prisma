@@ -41,6 +41,7 @@ model session {
   updated_at DateTime @updatedAt
   message_list_json String
   context_json String
+  weight_lbs Decimal?
 }
 
 model photo_log {

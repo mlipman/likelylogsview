@@ -27,6 +27,9 @@ const InstanceSession: FC = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [_, setSaving] = useState(false);
   const [askChat, setAskChat] = useState(false);
+  const [weightLbs, setWeightLbs] = useState<string | null>(null);
+  const [weightInput, setWeightInput] = useState("");
+  const [weightSaving, setWeightSaving] = useState(false);
 
   const getAIResponse = async (
     systemMessage: Message,
@@ -127,6 +130,37 @@ const InstanceSession: FC = () => {
     }
   };
 
+  const saveWeight = async () => {
+    const weight = parseFloat(weightInput);
+    if (isNaN(weight) || weight <= 0 || weightSaving) return;
+
+    setWeightSaving(true);
+    try {
+      await fetch("/api/session", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          instance: `${period}${instanceNum}`,
+          message_list_json: JSON.stringify(messages),
+          context_json: JSON.stringify(context),
+          weight_lbs: weight,
+        }),
+      });
+      setWeightLbs(String(weight));
+    } catch (error) {
+      console.error("Failed to save weight:", error);
+    } finally {
+      setWeightSaving(false);
+    }
+  };
+
+  const handleWeightKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void saveWeight();
+    }
+  };
+
   const fetchSession = async (instance: string) => {
     setPageLoading(true);
     try {
@@ -134,13 +168,25 @@ const InstanceSession: FC = () => {
       if (!response.ok) {
         setContext({data: ""});
         setMessages([]);
+        setWeightLbs(null);
+        setWeightInput("");
+        return;
       }
       const sessionData = await response.json();
       const messagesFromApi = JSON.parse(sessionData.message_list_json);
       const contextFromApi = JSON.parse(sessionData.context_json);
       setMessages(messagesFromApi);
       setContext(contextFromApi);
+      if (sessionData.weight_lbs != null) {
+        setWeightLbs(String(sessionData.weight_lbs));
+        setWeightInput(String(sessionData.weight_lbs));
+      } else {
+        setWeightLbs(null);
+        setWeightInput("");
+      }
     } catch (err) {
+      setWeightLbs(null);
+      setWeightInput("");
     } finally {
       setPageLoading(false);
     }
@@ -181,6 +227,34 @@ const InstanceSession: FC = () => {
             {row1link.title}
           </Link>
         ))}
+      </div>
+
+      {/* Weight Input */}
+      <div className="flex items-center gap-3 mb-4 px-1">
+        <label className="text-sm font-medium text-gray-700 w-16">
+          Weight
+        </label>
+        <input
+          type="number"
+          step="0.1"
+          value={weightInput}
+          onChange={e => setWeightInput(e.target.value)}
+          onKeyDown={handleWeightKeyDown}
+          placeholder="lbs"
+          className="w-28 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <button
+          onClick={saveWeight}
+          disabled={weightSaving || !weightInput.trim()}
+          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {weightSaving ? "Saving..." : "Save"}
+        </button>
+        {weightLbs && (
+          <span className="text-sm text-gray-500">
+            Recorded: {weightLbs} lbs
+          </span>
+        )}
       </div>
 
       <div className={styles.chatContainer}>

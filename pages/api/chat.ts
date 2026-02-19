@@ -6,6 +6,7 @@ import {weekMcpTools} from "./mcp/weeks";
 import {shopMcpTools} from "./mcp/shops";
 import {cookMcpTools} from "./mcp/cooks";
 import {prepMcpTools} from "./mcp/preps";
+import {sessionMcpTools} from "./mcp/sessions";
 import {weekService} from "../../services/weeks";
 import {recipeService} from "../../services/recipes";
 import {projectService} from "../../services/projects";
@@ -45,6 +46,7 @@ const allTools = [
   ...shopMcpTools,
   ...cookMcpTools,
   ...prepMcpTools,
+  ...sessionMcpTools,
 ];
 
 async function callMCPTool(toolName: string, args: any = {}): Promise<any> {

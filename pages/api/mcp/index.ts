@@ -6,6 +6,7 @@ import {weekMcpTools} from "./weeks";
 import {shopMcpTools} from "./shops";
 import {cookMcpTools} from "./cooks";
 import {prepMcpTools} from "./preps";
+import {sessionMcpTools} from "./sessions";
 const allTools = [
   ...projectMcpTools,
   ...recipeMcpTools,
@@ -13,6 +14,7 @@ const allTools = [
   ...shopMcpTools,
   ...cookMcpTools,
   ...prepMcpTools,
+  ...sessionMcpTools,
 ];
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests for MCP protocol

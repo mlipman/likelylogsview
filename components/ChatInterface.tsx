@@ -1,6 +1,9 @@
 import React, {useState, useEffect} from "react";
 import {Send} from "lucide-react";
-import {Message} from "../pages/coach"; // Importing Message type from coach.tsx
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
