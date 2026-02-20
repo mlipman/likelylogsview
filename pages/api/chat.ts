@@ -1,5 +1,5 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import {toolToSchema} from "./mcp/utils";
+import {McpTool} from "./mcp/utils";
 import {recipeMcpTools} from "./mcp/recipes";
 import {projectMcpTools} from "./mcp/projects";
 import {weekMcpTools} from "./mcp/weeks";
@@ -10,36 +10,15 @@ import {sessionMcpTools} from "./mcp/sessions";
 import {weekService} from "../../services/weeks";
 import {recipeService} from "../../services/recipes";
 import {projectService} from "../../services/projects";
+import {streamAnthropicChat} from "../../lib/streaming";
 
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
 }
 
-interface ConversationItem {
-  type: "text" | "tool_call";
-  content?: string; // For text items
-  tool_name?: string; // For tool call items
-  tool_input?: any; // For tool call items
-  tool_output?: any; // For tool call items
-}
-
-interface AnthropicResponse {
-  content: Array<{
-    text?: string;
-    type: string;
-    name?: string;
-    input?: any;
-    id?: string;
-  }>;
-  stop_reason?: string;
-  error?: {
-    message: string;
-  };
-}
-
 // Combine all available MCP tools
-const allTools = [
+const allTools: McpTool[] = [
   ...projectMcpTools,
   ...recipeMcpTools,
   ...weekMcpTools,
@@ -49,29 +28,18 @@ const allTools = [
   ...sessionMcpTools,
 ];
 
-async function callMCPTool(toolName: string, args: any = {}): Promise<any> {
-  // Find the tool directly instead of making HTTP request
+async function callTool(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<string> {
   const tool = allTools.find(t => t.name === toolName);
 
   if (!tool) {
     throw new Error(`MCP Tool Error: Unknown tool: ${toolName}`);
   }
 
-  try {
-    const result = await tool.handler(args);
-    return {
-      content: [
-        {
-          type: "text",
-          text: result,
-        },
-      ],
-    };
-  } catch (error) {
-    console.error("MCP tool error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`MCP Tool Error: ${message}`);
-  }
+  const result = await tool.handler(args);
+  return result;
 }
 
 async function buildWeekContext(weekId: number): Promise<string> {
@@ -183,60 +151,11 @@ Here is the current state of this week:
 
 `;
 
-async function fetchAnthropicResponse(
-  systemPrompt: string,
-  messagesWithContext: Message[]
-): Promise<AnthropicResponse> {
-  console.log("🤖 Making LLM request...", {
-    messageCount: messagesWithContext.length,
-    lastMessage:
-      messagesWithContext[messagesWithContext.length - 1]?.content?.substring(0, 100) +
-      "...",
-  });
-
-  const messages = messagesWithContext.map(msg => ({
-    role: msg.role === "assistant" ? ("assistant" as const) : ("user" as const),
-    content: msg.content,
-  }));
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": `${process.env.ANTHROPIC_KEY}`,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      system: systemPrompt,
-      messages: messages,
-      max_tokens: 10000,
-      tools: allTools.map(tool => {
-        const schema = toolToSchema(tool);
-        return {
-          name: schema.name,
-          description: schema.description,
-          input_schema: schema.inputSchema,
-        };
-      }),
-    }),
-  });
-
-  const data: AnthropicResponse = await response.json();
-
-  if (!response.ok) {
-    console.error("❌ LLM request failed:", data.error?.message);
-    throw new Error(data.error?.message || "Failed to get response from Anthropic");
-  }
-
-  console.log("✅ LLM response received", {
-    stopReason: data.stop_reason,
-    contentItems: data.content.length,
-    contentTypes: data.content.map(item => item.type),
-  });
-
-  return data;
-}
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -245,7 +164,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const {messagesWithContext, week_id} = req.body;
-    const conversationItems: ConversationItem[] = [];
 
     // Build system prompt with week context if week_id is provided
     let systemPrompt: string;
@@ -253,112 +171,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const weekContext = await buildWeekContext(week_id);
       systemPrompt = SYSTEM_PROMPT_PREFIX + weekContext;
     } else {
-      systemPrompt = "You are Sgt Chef, a helpful cooking assistant who gives concise, practical advice about meal planning, prep, and grocery shopping.";
+      systemPrompt =
+        "You are Sgt Chef, a helpful cooking assistant who gives concise, practical advice about meal planning, prep, and grocery shopping.";
     }
 
-    // Filter out system messages from the client — we handle system prompt server-side now
-    const userMessages = messagesWithContext.filter(
-      (msg: Message) => msg.role !== "system"
-    );
+    // Filter out system messages and map to Anthropic format
+    const messages = (messagesWithContext as Message[])
+      .filter(msg => msg.role !== "system")
+      .map(msg => ({
+        role: msg.role === "assistant" ? ("assistant" as const) : ("user" as const),
+        content: msg.content,
+      }));
 
-    let currentMessages = [...userMessages];
-
-    // Continue the conversation loop until Claude stops requesting tools
-    let loopCount = 0;
-    while (true) {
-      loopCount++;
-      console.log(`Starting conversation loop ${loopCount}`);
-
-      const response = await fetchAnthropicResponse(systemPrompt, currentMessages);
-
-      let hasToolUse = false;
-      let textContent = "";
-
-      // Process all content items in this response
-      for (const contentItem of response.content) {
-        if (contentItem.type === "tool_use" && contentItem.name) {
-          hasToolUse = true;
-
-          console.log("🔧 Executing tool:", {
-            name: contentItem.name,
-            input: contentItem.input,
-            id: contentItem.id,
-          });
-
-          // Execute the MCP tool
-          const toolResult = await callMCPTool(contentItem.name, contentItem.input || {});
-
-          console.log("✅ Tool completed:", {
-            name: contentItem.name,
-            outputLength: JSON.stringify(toolResult).length,
-          });
-
-          // Add tool call to conversation items
-          conversationItems.push({
-            type: "tool_call",
-            tool_name: contentItem.name,
-            tool_input: contentItem.input || {},
-            tool_output: toolResult,
-          });
-
-          // Add tool use and result to message history for next iteration
-          currentMessages.push({
-            role: "assistant",
-            content: JSON.stringify({
-              type: "tool_use",
-              name: contentItem.name,
-              input: contentItem.input,
-              id: contentItem.id,
-            }),
-          });
-
-          currentMessages.push({
-            role: "user",
-            content: JSON.stringify({
-              type: "tool_result",
-              tool_use_id: contentItem.id,
-              content: toolResult.content || [{type: "text", text: String(toolResult)}],
-            }),
-          });
-        } else if (contentItem.type === "text" && contentItem.text) {
-          textContent += contentItem.text;
-        }
-      }
-
-      // If there's text content, add it to conversation items
-      if (textContent.trim()) {
-        conversationItems.push({
-          type: "text",
-          content: textContent.trim(),
-        });
-      }
-
-      // If no tools were used in this iteration, we're done
-      if (!hasToolUse || response.stop_reason === "end_turn") {
-        console.log("Conversation complete", {
-          totalLoops: loopCount,
-          conversationItems: conversationItems.length,
-          stopReason: response.stop_reason,
-        });
-        break;
-      }
-    }
-
-    // If no conversation items were generated, add the final text content
-    if (conversationItems.length === 0) {
-      conversationItems.push({
-        type: "text",
-        content: "I apologize, but I couldn't process your request properly.",
-      });
-    }
-
-    return res.status(200).json({
-      conversation: conversationItems,
+    await streamAnthropicChat({
+      systemPrompt,
+      messages,
+      tools: allTools,
+      res,
+      callTool,
     });
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({
-      error: `Failed to process chat request: ${error instanceof Error ? error.message : String(error)}`,
-    });
+    console.error("Chat error:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: `Failed to process chat request: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 }

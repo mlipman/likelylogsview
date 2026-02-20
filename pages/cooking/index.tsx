@@ -1,9 +1,10 @@
 // import { useRouter } from "next/router";
 import Link from "next/link";
-import {FormEvent, KeyboardEvent, useEffect, useState} from "react";
+import {FormEvent, KeyboardEvent, useEffect, useRef, useState} from "react";
 import {getCurrentWeek, formatWeekRange} from "../../utils/weekUtils";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import {streamChat, ConversationItem} from "@/utils/streamChat";
 
 interface Cook {
   id: number;
@@ -36,14 +37,6 @@ interface Week {
   shops: Shop[];
 }
 
-interface ConversationItem {
-  type: "text" | "tool_call";
-  content?: string;
-  tool_name?: string;
-  tool_input?: any;
-  tool_output?: any;
-}
-
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content?: string;
@@ -65,6 +58,8 @@ export default function CookingHome() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
+  const streamingItemsRef = useRef<ConversationItem[]>([]);
+
   const sendChatMessage = async () => {
     const trimmedInput = chatInput.trim();
     if (!trimmedInput || chatLoading) return;
@@ -76,43 +71,84 @@ export default function CookingHome() {
     setChatError(null);
     setChatLoading(true);
 
+    // Initialize streaming assistant message
+    streamingItemsRef.current = [];
+    const assistantMessage: ChatMessage = {role: "assistant", conversation: []};
+    setChatMessages(prev => [...prev, assistantMessage]);
+
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await streamChat({
+        url: "/api/chat",
+        body: {
           week_id: currentWeek?.id,
           messagesWithContext: updatedMessages.map(msg => {
-            // Convert assistant messages with conversation back to content format for API
             if (msg.role === "assistant" && msg.conversation) {
               const textItems = msg.conversation
                 .filter(item => item.type === "text" && item.content)
                 .map(item => item.content)
                 .join("\n\n");
-              return {
-                role: msg.role,
-                content: textItems || "I processed your request.",
-              };
+              return {role: msg.role, content: textItems || "I processed your request."};
             }
             return msg;
           }),
-        }),
+        },
+        onText: (text: string) => {
+          const items = streamingItemsRef.current;
+          const last = items[items.length - 1];
+          if (last && last.type === "text") {
+            last.content = (last.content || "") + text;
+          } else {
+            items.push({type: "text", content: text});
+          }
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...items],
+            };
+            return updated;
+          });
+        },
+        onToolStart: (name: string, input: Record<string, unknown>) => {
+          streamingItemsRef.current.push({
+            type: "tool_call",
+            tool_name: name,
+            tool_input: input,
+            tool_output: undefined,
+          });
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...streamingItemsRef.current],
+            };
+            return updated;
+          });
+        },
+        onToolEnd: (name: string, result: string) => {
+          const items = streamingItemsRef.current;
+          for (let i = items.length - 1; i >= 0; i--) {
+            if (items[i].type === "tool_call" && items[i].tool_name === name && !items[i].tool_output) {
+              items[i].tool_output = result;
+              break;
+            }
+          }
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...items],
+            };
+            return updated;
+          });
+        },
+        onDone: () => {
+          // Stream complete
+        },
+        onError: (message: string) => {
+          setChatError(message);
+        },
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch response");
-      }
-
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        conversation: data.conversation,
-      };
-
-      setChatMessages(prevMessages => [...prevMessages, assistantMessage]);
     } catch (error) {
       setChatError(
         error instanceof Error
@@ -686,7 +722,7 @@ export default function CookingHome() {
                 ))
               )}
 
-              {chatLoading && (
+              {chatLoading && streamingItemsRef.current.length === 0 && (
                 <div className="text-sm text-gray-500">
                   Sgt Chef is thinking and may be checking your cooking data...
                 </div>

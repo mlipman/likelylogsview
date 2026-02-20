@@ -1,5 +1,5 @@
 import type {NextApiRequest, NextApiResponse} from "next";
-import {toolToSchema, McpTool} from "../mcp/utils";
+import {McpTool} from "../mcp/utils";
 import {sessionMcpTools} from "../mcp/sessions";
 import {recipeMcpTools} from "../mcp/recipes";
 import {cookMcpTools} from "../mcp/cooks";
@@ -7,32 +7,11 @@ import {sessionService} from "../../../services/sessions";
 import {dateToInstanceNum} from "../../../utils/dates";
 import {addDays, getISOWeek, getISOWeekYear} from "date-fns";
 import prisma from "../../../lib/prisma";
+import {streamAnthropicChat} from "../../../lib/streaming";
 
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
-}
-
-interface ConversationItem {
-  type: "text" | "tool_call";
-  content?: string;
-  tool_name?: string;
-  tool_input?: any;
-  tool_output?: any;
-}
-
-interface AnthropicResponse {
-  content: Array<{
-    text?: string;
-    type: string;
-    name?: string;
-    input?: any;
-    id?: string;
-  }>;
-  stop_reason?: string;
-  error?: {
-    message: string;
-  };
 }
 
 // Coach has access to session tools + read-only cooking tools
@@ -43,28 +22,18 @@ const coachTools: McpTool[] = [
   ...cookMcpTools.filter(t => t.name === "view_cooks"),
 ];
 
-async function callTool(toolName: string, args: any = {}): Promise<any> {
+async function callTool(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<string> {
   const tool = coachTools.find(t => t.name === toolName);
 
   if (!tool) {
     throw new Error(`Coach Tool Error: Unknown tool: ${toolName}`);
   }
 
-  try {
-    const result = await tool.handler(args);
-    return {
-      content: [
-        {
-          type: "text",
-          text: result,
-        },
-      ],
-    };
-  } catch (error) {
-    console.error("Coach tool error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Coach Tool Error: ${message}`);
-  }
+  const result = await tool.handler(args);
+  return result;
 }
 
 function formatSessionForContext(
@@ -215,60 +184,11 @@ Here is the current context:
 
 `;
 
-async function fetchAnthropicResponse(
-  systemPrompt: string,
-  messagesWithContext: Message[]
-): Promise<AnthropicResponse> {
-  console.log("🤖 Coach LLM request...", {
-    messageCount: messagesWithContext.length,
-    lastMessage:
-      messagesWithContext[messagesWithContext.length - 1]?.content?.substring(0, 100) +
-      "...",
-  });
-
-  const messages = messagesWithContext.map(msg => ({
-    role: msg.role === "assistant" ? ("assistant" as const) : ("user" as const),
-    content: msg.content,
-  }));
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": `${process.env.ANTHROPIC_KEY}`,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      system: systemPrompt,
-      messages: messages,
-      max_tokens: 10000,
-      tools: coachTools.map(tool => {
-        const schema = toolToSchema(tool);
-        return {
-          name: schema.name,
-          description: schema.description,
-          input_schema: schema.inputSchema,
-        };
-      }),
-    }),
-  });
-
-  const data: AnthropicResponse = await response.json();
-
-  if (!response.ok) {
-    console.error("❌ Coach LLM request failed:", data.error?.message);
-    throw new Error(data.error?.message || "Failed to get response from Anthropic");
-  }
-
-  console.log("✅ Coach LLM response received", {
-    stopReason: data.stop_reason,
-    contentItems: data.content.length,
-    contentTypes: data.content.map(item => item.type),
-  });
-
-  return data;
-}
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -277,107 +197,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const {messagesWithContext} = req.body;
-    const conversationItems: ConversationItem[] = [];
 
     const coachContext = await buildCoachContext();
     const systemPrompt = COACH_SYSTEM_PROMPT + coachContext;
 
-    // Filter out system messages from the client
-    const userMessages = messagesWithContext.filter(
-      (msg: Message) => msg.role !== "system"
-    );
+    // Filter out system messages and map to Anthropic format
+    const messages = (messagesWithContext as Message[])
+      .filter(msg => msg.role !== "system")
+      .map(msg => ({
+        role: msg.role === "assistant" ? ("assistant" as const) : ("user" as const),
+        content: msg.content,
+      }));
 
-    let currentMessages = [...userMessages];
-
-    // Tool calling loop
-    let loopCount = 0;
-    while (true) {
-      loopCount++;
-      console.log(`Coach conversation loop ${loopCount}`);
-
-      const response = await fetchAnthropicResponse(systemPrompt, currentMessages);
-
-      let hasToolUse = false;
-      let textContent = "";
-
-      for (const contentItem of response.content) {
-        if (contentItem.type === "tool_use" && contentItem.name) {
-          hasToolUse = true;
-
-          console.log("🔧 Coach executing tool:", {
-            name: contentItem.name,
-            input: contentItem.input,
-            id: contentItem.id,
-          });
-
-          const toolResult = await callTool(contentItem.name, contentItem.input || {});
-
-          console.log("✅ Coach tool completed:", {
-            name: contentItem.name,
-            outputLength: JSON.stringify(toolResult).length,
-          });
-
-          conversationItems.push({
-            type: "tool_call",
-            tool_name: contentItem.name,
-            tool_input: contentItem.input || {},
-            tool_output: toolResult,
-          });
-
-          currentMessages.push({
-            role: "assistant",
-            content: JSON.stringify({
-              type: "tool_use",
-              name: contentItem.name,
-              input: contentItem.input,
-              id: contentItem.id,
-            }),
-          });
-
-          currentMessages.push({
-            role: "user",
-            content: JSON.stringify({
-              type: "tool_result",
-              tool_use_id: contentItem.id,
-              content: toolResult.content || [{type: "text", text: String(toolResult)}],
-            }),
-          });
-        } else if (contentItem.type === "text" && contentItem.text) {
-          textContent += contentItem.text;
-        }
-      }
-
-      if (textContent.trim()) {
-        conversationItems.push({
-          type: "text",
-          content: textContent.trim(),
-        });
-      }
-
-      if (!hasToolUse || response.stop_reason === "end_turn") {
-        console.log("Coach conversation complete", {
-          totalLoops: loopCount,
-          conversationItems: conversationItems.length,
-          stopReason: response.stop_reason,
-        });
-        break;
-      }
-    }
-
-    if (conversationItems.length === 0) {
-      conversationItems.push({
-        type: "text",
-        content: "I couldn't process your request properly.",
-      });
-    }
-
-    return res.status(200).json({
-      conversation: conversationItems,
+    await streamAnthropicChat({
+      systemPrompt,
+      messages,
+      tools: coachTools,
+      res,
+      callTool,
     });
   } catch (error) {
     console.error("Coach chat error:", error);
-    return res.status(500).json({
-      error: `Failed to process coach chat request: ${error instanceof Error ? error.message : String(error)}`,
-    });
+    // If headers haven't been sent yet, we can still return JSON error
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: `Failed to process coach chat request: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+    // Otherwise the error was already streamed via SSE
   }
 }

@@ -7,6 +7,7 @@ import {useRouter} from "next/router";
 import {childPages, makeHeader} from "@/utils/dates";
 import type {Period} from "@/utils/dates";
 import Link from "next/link";
+import {streamChat} from "@/utils/streamChat";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -37,25 +38,25 @@ const InstanceSession: FC = () => {
     userMessage: Message
   ): Promise<Message> => {
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      let fullText = "";
+      await streamChat({
+        url: "/api/chat",
+        body: {
           messagesWithContext: [systemMessage, ...originalMessages, userMessage],
-        }),
+        },
+        onText: (text: string) => {
+          fullText += text;
+        },
+        onToolStart: () => {},
+        onToolEnd: () => {},
+        onDone: () => {},
+        onError: (message: string) => {
+          throw new Error(message);
+        },
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to get response");
-      }
-
       return {
         role: "assistant",
-        content: data.content,
+        content: fullText || "I processed your request.",
       };
     } catch (error) {
       return {

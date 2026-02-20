@@ -1,16 +1,9 @@
-import {FormEvent, KeyboardEvent, useEffect, useState} from "react";
+import {FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import {dateToInstanceNum} from "@/utils/dates";
-
-interface ConversationItem {
-  type: "text" | "tool_call";
-  content?: string;
-  tool_name?: string;
-  tool_input?: any;
-  tool_output?: any;
-}
+import {streamChat, ConversationItem} from "@/utils/streamChat";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -106,6 +99,25 @@ export default function CoachPage() {
     }
   };
 
+  // Ref to track the in-progress conversation items for the streaming assistant message
+  const streamingItemsRef = useRef<ConversationItem[]>([]);
+
+  const refreshDailyData = useCallback(async () => {
+    try {
+      const sessionResponse = await fetch(`/api/session?instance=${todayInstance}`);
+      if (sessionResponse.ok) {
+        const session = await sessionResponse.json();
+        const messages = JSON.parse(session.message_list_json) as SessionMessage[];
+        setDailyData({
+          weight_lbs: session.weight_lbs,
+          messages,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to refresh daily data:", error);
+    }
+  }, [todayInstance]);
+
   const sendChatMessage = async () => {
     const trimmedInput = chatInput.trim();
     if (!trimmedInput || chatLoading) return;
@@ -117,50 +129,85 @@ export default function CoachPage() {
     setChatError(null);
     setChatLoading(true);
 
+    // Initialize streaming assistant message
+    streamingItemsRef.current = [];
+    const assistantMessage: ChatMessage = {role: "assistant", conversation: []};
+    setChatMessages(prev => [...prev, assistantMessage]);
+
     try {
-      const response = await fetch("/api/coach/chat", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
+      await streamChat({
+        url: "/api/coach/chat",
+        body: {
           messagesWithContext: updatedMessages.map(msg => {
             if (msg.role === "assistant" && msg.conversation) {
               const textItems = msg.conversation
                 .filter(item => item.type === "text" && item.content)
                 .map(item => item.content)
                 .join("\n\n");
-              return {
-                role: msg.role,
-                content: textItems || "I processed your request.",
-              };
+              return {role: msg.role, content: textItems || "I processed your request."};
             }
             return msg;
           }),
-        }),
+        },
+        onText: (text: string) => {
+          const items = streamingItemsRef.current;
+          const last = items[items.length - 1];
+          if (last && last.type === "text") {
+            last.content = (last.content || "") + text;
+          } else {
+            items.push({type: "text", content: text});
+          }
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...items],
+            };
+            return updated;
+          });
+        },
+        onToolStart: (name: string, input: Record<string, unknown>) => {
+          streamingItemsRef.current.push({
+            type: "tool_call",
+            tool_name: name,
+            tool_input: input,
+            tool_output: undefined,
+          });
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...streamingItemsRef.current],
+            };
+            return updated;
+          });
+        },
+        onToolEnd: (name: string, result: string) => {
+          const items = streamingItemsRef.current;
+          // Find the last tool_call with this name that has no output yet
+          for (let i = items.length - 1; i >= 0; i--) {
+            if (items[i].type === "tool_call" && items[i].tool_name === name && !items[i].tool_output) {
+              items[i].tool_output = result;
+              break;
+            }
+          }
+          setChatMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              conversation: [...items],
+            };
+            return updated;
+          });
+        },
+        onDone: () => {
+          // Refresh session data since the coach may have added messages
+          void refreshDailyData();
+        },
+        onError: (message: string) => {
+          setChatError(message);
+        },
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch response");
-      }
-
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        conversation: data.conversation,
-      };
-
-      setChatMessages(prev => [...prev, assistantMessage]);
-
-      // Refresh today's data since the coach may have added session messages
-      const sessionResponse = await fetch(`/api/session?instance=${todayInstance}`);
-      if (sessionResponse.ok) {
-        const session = await sessionResponse.json();
-        const messages = JSON.parse(session.message_list_json) as SessionMessage[];
-        setDailyData({
-          weight_lbs: session.weight_lbs,
-          messages,
-        });
-      }
     } catch (error) {
       setChatError(
         error instanceof Error ? error.message : "Something went wrong. Please try again."
@@ -339,7 +386,7 @@ export default function CoachPage() {
                 ))
               )}
 
-              {chatLoading && (
+              {chatLoading && streamingItemsRef.current.length === 0 && (
                 <div className="text-sm text-gray-500">
                   Coach is thinking...
                 </div>

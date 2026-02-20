@@ -6,6 +6,7 @@ interface Message {
 }
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import {streamChat} from "@/utils/streamChat";
 
 interface ChatInterfaceProps {
   initialMessages: Message[]; // Props to take in a list of messages
@@ -32,38 +33,47 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({initialMessages}) => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      let fullText = "";
+      // Add a placeholder assistant message for streaming
+      setMessages((prev) => [...prev, {role: "assistant", content: ""}]);
+
+      await streamChat({
+        url: "/api/chat",
+        body: {
           messages: [...messages, userMessage],
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to get response");
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.content,
         },
-      ]);
+        onText: (text: string) => {
+          fullText += text;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {role: "assistant", content: fullText};
+            return updated;
+          });
+        },
+        onToolStart: () => {},
+        onToolEnd: () => {},
+        onDone: () => {},
+        onError: (message: string) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              content: `Error: ${message}`,
+            };
+            return updated;
+          });
+        },
+      });
     } catch (error) {
       console.error("Error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
           role: "assistant",
           content: "Sorry, there was an error processing your request.",
-        },
-      ]);
+        };
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
