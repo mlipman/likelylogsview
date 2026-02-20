@@ -1,4 +1,4 @@
-import {FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState} from "react";
+import {FormEvent, KeyboardEvent, useRef, useState} from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -11,112 +11,14 @@ interface ChatMessage {
   conversation?: ConversationItem[];
 }
 
-interface SessionMessage {
-  role: string;
-  content: string;
-}
-
-interface DailyData {
-  weight_lbs: string | null;
-  messages: SessionMessage[];
-}
-
 export default function CoachPage() {
-  const [dailyData, setDailyData] = useState<DailyData>({weight_lbs: null, messages: []});
-  const [pageLoading, setPageLoading] = useState(true);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [weightInput, setWeightInput] = useState("");
-  const [weightSaving, setWeightSaving] = useState(false);
-
-  const todayInstance = `day${dateToInstanceNum(new Date(), "day")}`;
-
-  useEffect(() => {
-    const fetchToday = async () => {
-      try {
-        const response = await fetch(`/api/session?instance=${todayInstance}`);
-        if (response.ok) {
-          const session = await response.json();
-          const messages = JSON.parse(session.message_list_json) as SessionMessage[];
-          setDailyData({
-            weight_lbs: session.weight_lbs,
-            messages,
-          });
-          if (session.weight_lbs) {
-            setWeightInput(String(session.weight_lbs));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch today's session:", error);
-      } finally {
-        setPageLoading(false);
-      }
-    };
-    fetchToday();
-  }, [todayInstance]);
-
-  const saveWeight = async () => {
-    const weight = parseFloat(weightInput);
-    if (isNaN(weight) || weight <= 0 || weightSaving) return;
-
-    setWeightSaving(true);
-    try {
-      const response = await fetch(`/api/session?instance=${todayInstance}`);
-      let messageListJson = JSON.stringify([]);
-      let contextJson = JSON.stringify({data: ""});
-
-      if (response.ok) {
-        const existing = await response.json();
-        messageListJson = existing.message_list_json;
-        contextJson = existing.context_json;
-      }
-
-      await fetch("/api/session", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          instance: todayInstance,
-          message_list_json: messageListJson,
-          context_json: contextJson,
-          weight_lbs: weight,
-        }),
-      });
-
-      setDailyData(prev => ({...prev, weight_lbs: String(weight)}));
-    } catch (error) {
-      console.error("Failed to save weight:", error);
-    } finally {
-      setWeightSaving(false);
-    }
-  };
-
-  const handleWeightKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      void saveWeight();
-    }
-  };
 
   // Ref to track the in-progress conversation items for the streaming assistant message
   const streamingItemsRef = useRef<ConversationItem[]>([]);
-
-  const refreshDailyData = useCallback(async () => {
-    try {
-      const sessionResponse = await fetch(`/api/session?instance=${todayInstance}`);
-      if (sessionResponse.ok) {
-        const session = await sessionResponse.json();
-        const messages = JSON.parse(session.message_list_json) as SessionMessage[];
-        setDailyData({
-          weight_lbs: session.weight_lbs,
-          messages,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to refresh daily data:", error);
-    }
-  }, [todayInstance]);
 
   const sendChatMessage = async () => {
     const trimmedInput = chatInput.trim();
@@ -200,10 +102,7 @@ export default function CoachPage() {
             return updated;
           });
         },
-        onDone: () => {
-          // Refresh session data since the coach may have added messages
-          void refreshDailyData();
-        },
+        onDone: () => {},
         onError: (message: string) => {
           setChatError(message);
         },
@@ -229,18 +128,6 @@ export default function CoachPage() {
     }
   };
 
-  if (pageLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Coach</h2>
-          <p className="text-gray-600">Gathering your data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -250,62 +137,6 @@ export default function CoachPage() {
           <p className="text-lg text-gray-600">
             Accountability partner for diet and exercise
           </p>
-        </div>
-
-        {/* Today's Dashboard */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Today</h2>
-
-          {/* Weight */}
-          <div className="flex items-center gap-3 mb-4">
-            <label className="text-sm font-medium text-gray-700 w-16">Weight</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weightInput}
-              onChange={e => setWeightInput(e.target.value)}
-              onKeyDown={handleWeightKeyDown}
-              placeholder="lbs"
-              className="w-28 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-            <button
-              onClick={saveWeight}
-              disabled={weightSaving || !weightInput.trim()}
-              className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {weightSaving ? "Saving..." : "Save"}
-            </button>
-            {dailyData.weight_lbs && (
-              <span className="text-sm text-gray-500">
-                Recorded: {dailyData.weight_lbs} lbs
-              </span>
-            )}
-          </div>
-
-          {/* Today's session messages */}
-          {dailyData.messages.length > 0 && (
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">
-                Today&apos;s Log ({dailyData.messages.length} entries)
-              </h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {dailyData.messages.map((msg, i) => (
-                  <div key={i} className="text-sm">
-                    <span className="text-xs font-medium text-gray-400 mr-2">
-                      [{msg.role}]
-                    </span>
-                    <span className="text-gray-700">{msg.content}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {dailyData.messages.length === 0 && !dailyData.weight_lbs && (
-            <p className="text-sm text-gray-500">
-              No data logged today yet. Start by logging your weight or chatting with your coach.
-            </p>
-          )}
         </div>
 
         {/* Coach Chat */}

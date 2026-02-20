@@ -71,13 +71,30 @@ function formatSessionForContext(
 }
 
 async function buildCoachContext(): Promise<string> {
-  const now = new Date();
+  // Use Chicago timezone for all date calculations
+  const chicagoNow = new Date(
+    new Date().toLocaleString("en-US", {timeZone: "America/Chicago"})
+  );
+  const now = chicagoNow;
   const yesterday = addDays(now, -1);
 
   const todayInstance = `day${dateToInstanceNum(now, "day")}`;
   const yesterdayInstance = `day${dateToInstanceNum(yesterday, "day")}`;
   const weekInstance = `week${getISOWeekYear(now)}${String(getISOWeek(now)).padStart(2, "0")}`;
   const monthInstance = `month${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // e.g. "Thursday, February 19, 2026, 3:45:12 PM"
+  const chicagoDateTimeStr = new Date().toLocaleString("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 
   const [
     todaySession,
@@ -100,6 +117,11 @@ async function buildCoachContext(): Promise<string> {
   ]);
 
   const parts: string[] = [];
+
+  parts.push("## Current Date & Time");
+  parts.push(`${chicagoDateTimeStr} (Chicago)`);
+  parts.push(`Day: ${todayInstance} | Week: ${weekInstance} | Month: ${monthInstance}`);
+  parts.push("");
 
   parts.push(formatSessionForContext("Today", todayInstance, todaySession));
   parts.push(formatSessionForContext("Yesterday", yesterdayInstance, yesterdaySession));
