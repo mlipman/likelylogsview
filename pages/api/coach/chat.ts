@@ -198,6 +198,7 @@ working towards getting from like 28 minute 5ks to a 20 minute 5k twice,
 each one over a few months.
 
 Other facts: Michael is 34 years old. 5 ft 10 in. Married for 3 years to his wife Rachel who is pregnant.
+They live in Chicago.
 
 Michael wants to cook more at home and has a separate project and llm based assistant to help
 with that. There might be more functionality for you to pull data from there.
