@@ -67,7 +67,11 @@ async function callTool(toolName: string, args: any = {}): Promise<any> {
   }
 }
 
-function formatSessionForContext(label: string, instance: string, session: {message_list_json: string; weight_lbs: any} | null): string {
+function formatSessionForContext(
+  label: string,
+  instance: string,
+  session: {message_list_json: string; weight_lbs: any} | null
+): string {
   const parts: string[] = [];
   parts.push(`## ${label} (${instance})`);
 
@@ -81,7 +85,10 @@ function formatSessionForContext(label: string, instance: string, session: {mess
     parts.push(`Weight: ${session.weight_lbs} lbs`);
   }
 
-  const messages = JSON.parse(session.message_list_json) as {role: string; content: string}[];
+  const messages = JSON.parse(session.message_list_json) as {
+    role: string;
+    content: string;
+  }[];
   if (messages.length > 0) {
     for (const msg of messages) {
       parts.push(`[${msg.role}]: ${msg.content}`);
@@ -103,19 +110,25 @@ async function buildCoachContext(): Promise<string> {
   const weekInstance = `week${getISOWeekYear(now)}${String(getISOWeek(now)).padStart(2, "0")}`;
   const monthInstance = `month${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  const [todaySession, yesterdaySession, weekSession, monthSession, weightHistory, recentCooks] =
-    await Promise.all([
-      sessionService.findByInstance(todayInstance),
-      sessionService.findByInstance(yesterdayInstance),
-      sessionService.findByInstance(weekInstance),
-      sessionService.findByInstance(monthInstance),
-      sessionService.getWeightHistory(14),
-      prisma.cook.findMany({
-        orderBy: {created_at: "desc"},
-        take: 5,
-        include: {recipe: {select: {title: true}}},
-      }),
-    ]);
+  const [
+    todaySession,
+    yesterdaySession,
+    weekSession,
+    monthSession,
+    weightHistory,
+    recentCooks,
+  ] = await Promise.all([
+    sessionService.findByInstance(todayInstance),
+    sessionService.findByInstance(yesterdayInstance),
+    sessionService.findByInstance(weekInstance),
+    sessionService.findByInstance(monthInstance),
+    sessionService.getWeightHistory(14),
+    prisma.cook.findMany({
+      orderBy: {created_at: "desc"},
+      take: 5,
+      include: {recipe: {select: {title: true}}},
+    }),
+  ]);
 
   const parts: string[] = [];
 
@@ -133,7 +146,9 @@ async function buildCoachContext(): Promise<string> {
     const latest = Number(weightHistory[0].weight_lbs);
     const goal = 180;
     const remaining = latest - goal;
-    parts.push(`\nCurrent: ${latest} lbs | Goal: ${goal} lbs | To lose: ${remaining.toFixed(1)} lbs`);
+    parts.push(
+      `\nCurrent: ${latest} lbs | Goal: ${goal} lbs | To lose: ${remaining.toFixed(1)} lbs`
+    );
     parts.push("");
   }
 
@@ -142,7 +157,9 @@ async function buildCoachContext(): Promise<string> {
     parts.push("## Recent Home Cooking (from Sgt Chef)");
     for (const cook of recentCooks) {
       const title = cook.recipe?.title || "Freestyle";
-      const date = cook.occurred_at ? cook.occurred_at.toISOString().split("T")[0] : "no date";
+      const date = cook.occurred_at
+        ? cook.occurred_at.toISOString().split("T")[0]
+        : "no date";
       parts.push(`- ${title} (${date})${cook.outcome_md ? `: ${cook.outcome_md}` : ""}`);
     }
     parts.push("");
@@ -180,6 +197,8 @@ In the past he had a lot of success running 5k on the treadmill, especially
 working towards getting from like 28 minute 5ks to a 20 minute 5k twice,
 each one over a few months.
 
+Other facts: Michael is 34 years old. 5 ft 10 in. Married for 3 years to his wife Rachel who is pregnant.
+
 Michael wants to cook more at home and has a separate project and llm based assistant to help
 with that. There might be more functionality for you to pull data from there.
 
@@ -202,7 +221,8 @@ async function fetchAnthropicResponse(
   console.log("🤖 Coach LLM request...", {
     messageCount: messagesWithContext.length,
     lastMessage:
-      messagesWithContext[messagesWithContext.length - 1]?.content?.substring(0, 100) + "...",
+      messagesWithContext[messagesWithContext.length - 1]?.content?.substring(0, 100) +
+      "...",
   });
 
   const messages = messagesWithContext.map(msg => ({
