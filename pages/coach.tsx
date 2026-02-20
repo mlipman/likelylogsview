@@ -1,4 +1,4 @@
-import {FormEvent, KeyboardEvent, useRef, useState} from "react";
+import {KeyboardEvent, useRef, useState} from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -116,11 +116,6 @@ export default function CoachPage() {
     }
   };
 
-  const handleChatSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await sendChatMessage();
-  };
-
   const handleChatKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
@@ -230,7 +225,7 @@ export default function CoachPage() {
               </div>
             )}
 
-            <form onSubmit={handleChatSubmit} className="space-y-2">
+            <div className="space-y-2">
               <textarea
                 value={chatInput}
                 onChange={event => setChatInput(event.target.value)}
@@ -245,14 +240,15 @@ export default function CoachPage() {
                   Shift + Enter to send, Enter for a new line.
                 </span>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => void sendChatMessage()}
                   disabled={chatLoading || !chatInput.trim()}
                   className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {chatLoading ? "Sending..." : "Send"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
 
