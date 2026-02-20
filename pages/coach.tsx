@@ -122,7 +122,7 @@ export default function CoachPage() {
   };
 
   const handleChatKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
       void sendChatMessage();
     }
@@ -242,7 +242,7 @@ export default function CoachPage() {
               />
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500">
-                  Press Enter to send, Shift + Enter for a new line.
+                  Shift + Enter to send, Enter for a new line.
                 </span>
                 <button
                   type="submit"
