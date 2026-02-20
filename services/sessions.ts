@@ -69,17 +69,7 @@ function formatMessagePrefix(instance: string): string {
   const {period, instanceNum} = parsed;
   const now = new Date();
 
-  // Format time and date parts in Central time
-  const timeStr = now
-    .toLocaleString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "America/Chicago",
-    })
-    .replace(" ", "")
-    .toLowerCase();
-
+  // Format date parts in Central time (no time of day)
   const weekdayStr = now.toLocaleString("en-US", {
     weekday: "long",
     timeZone: "America/Chicago",
@@ -95,11 +85,10 @@ function formatMessagePrefix(instance: string): string {
     timeZone: "America/Chicago",
   });
 
-  const fullDateSuffix = ` ${weekdayStr}, ${monthStr} ${dayNum}`;
-  const weekdaySuffix = ` ${weekdayStr}`;
+  const fullDate = `${weekdayStr}, ${monthStr} ${dayNum}`;
 
   if (period === "month") {
-    return `${timeStr}${fullDateSuffix}`;
+    return fullDate;
   }
 
   // Get the "today" date in Central time for comparison
@@ -107,33 +96,33 @@ function formatMessagePrefix(instance: string): string {
   const centralToday = new Date(centralDateStr);
 
   const range = instanceToDateRange(period, instanceNum);
-  if (!range) return timeStr;
+  if (!range) return "";
 
   if (period === "day") {
-    // Check if centralToday matches the session's day
+    // Same day: no prefix needed (the session is already scoped to the day)
     const centralYear = centralToday.getFullYear();
     const centralDayOfYear = Math.floor(
       (centralToday.getTime() - new Date(centralYear, 0, 0).getTime()) / 86400000
     );
     const expectedInstanceNum = `${centralYear}${String(centralDayOfYear).padStart(3, "0")}`;
     if (instanceNum === expectedInstanceNum) {
-      return timeStr;
+      return "";
     }
-    return `${timeStr}${fullDateSuffix}`;
+    return fullDate;
   }
 
   if (period === "week") {
-    // Check if centralToday falls within the week's range
+    // Same week: just the weekday
     const todayMidnight = new Date(centralToday.getFullYear(), centralToday.getMonth(), centralToday.getDate());
     const startMidnight = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
     const endMidnight = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate());
     if (todayMidnight >= startMidnight && todayMidnight <= endMidnight) {
-      return `${timeStr}${weekdaySuffix}`;
+      return weekdayStr;
     }
-    return `${timeStr}${fullDateSuffix}`;
+    return fullDate;
   }
 
-  return timeStr;
+  return "";
 }
 
 export class SessionService {

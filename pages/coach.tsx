@@ -42,11 +42,18 @@ export default function CoachPage() {
         body: {
           messagesWithContext: updatedMessages.map(msg => {
             if (msg.role === "assistant" && msg.conversation) {
-              const textItems = msg.conversation
-                .filter(item => item.type === "text" && item.content)
-                .map(item => item.content)
-                .join("\n\n");
-              return {role: msg.role, content: textItems || "I processed your request."};
+              const parts: string[] = [];
+              for (const item of msg.conversation) {
+                if (item.type === "text" && item.content) {
+                  parts.push(item.content);
+                } else if (item.type === "tool_call" && item.tool_name) {
+                  parts.push(`[Called tool: ${item.tool_name} with input: ${JSON.stringify(item.tool_input)}]`);
+                  if (item.tool_output) {
+                    parts.push(`[Tool result: ${item.tool_output}]`);
+                  }
+                }
+              }
+              return {role: msg.role, content: parts.join("\n\n") || "I processed your request."};
             }
             return msg;
           }),
