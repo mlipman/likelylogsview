@@ -4,7 +4,28 @@ import {Prisma} from "@prisma/client";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
-    const {instance, message_list_json, context_json, weight_lbs} = req.body;
+    const {instance, message_list_json, context_json, weight_lbs, new_message} = req.body;
+
+    // If new_message is provided, prepend timestamp and append to existing messages
+    if (new_message) {
+      const stamped = sessionService.prependTimestamp(instance, new_message.content);
+      const stampedMessage = {role: new_message.role, content: stamped};
+
+      const existing = await sessionService.findByInstance(instance);
+      const existingMessages = existing
+        ? JSON.parse(existing.message_list_json)
+        : [];
+      const updatedMessages = [...existingMessages, stampedMessage];
+
+      const session = await sessionService.upsert(
+        instance,
+        JSON.stringify(updatedMessages),
+        context_json,
+        weight_lbs != null ? new Prisma.Decimal(weight_lbs) : undefined
+      );
+      return res.status(201).json({...session, stamped_message: stampedMessage});
+    }
+
     const session = await sessionService.upsert(
       instance,
       message_list_json,

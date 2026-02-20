@@ -73,6 +73,10 @@ const InstanceSession: FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
 
+    // Save user message with server-side timestamp
+    const stampedMessage = await saveNewMessage(userMessage);
+    const userWithTimestamp = stampedMessage || userMessage;
+
     let messages_to_add: Message[] = [];
 
     if (askChat) {
@@ -87,9 +91,12 @@ const InstanceSession: FC = () => {
       setMessageLoading(false);
     }
 
-    const newMessages = [...originalMessages, userMessage, ...messages_to_add];
+    const newMessages = [...originalMessages, userWithTimestamp, ...messages_to_add];
     setMessages(newMessages);
-    await saveSession(newMessages);
+
+    if (messages_to_add.length > 0) {
+      await saveSession(newMessages);
+    }
   };
 
   // removes the message and the following assistant message if it exists
@@ -102,6 +109,27 @@ const InstanceSession: FC = () => {
       }
       return [...prev.slice(0, index), ...prev.slice(index + 1)];
     });
+  };
+
+  const saveNewMessage = async (message: Message): Promise<Message | null> => {
+    try {
+      const response = await fetch("/api/session", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          instance: `${period}${instanceNum}`,
+          context_json: JSON.stringify(context),
+          new_message: {role: message.role, content: message.content},
+        }),
+      });
+      const data = await response.json();
+      if (data.stamped_message) {
+        return data.stamped_message as Message;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   };
 
   const saveSession = async (messagesToSave: Message[] = messages) => {
