@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "pages/api/coach/chat.ts": {
+      "maxDuration": 60
+    },
+    "pages/api/chat.ts": {
+      "maxDuration": 60
+    }
+  }
+}

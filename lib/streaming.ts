@@ -202,11 +202,16 @@ async function streamOneRound({
   tools,
   res,
 }: StreamOneRoundOptions): Promise<StreamRoundResult> {
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_KEY environment variable is not set");
+  }
+
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": `${process.env.ANTHROPIC_KEY}`,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
