@@ -20,17 +20,29 @@ export class WeekService {
   findManyWithRelations(): Promise<(Week & {
     cooks: Array<{
       id: number;
+      title: string | null;
+      summary: string | null;
+      local_date: string | null;
+      status: import("@prisma/client").EntityStatus;
       recipe: { title: string } | null;
       plan_md: string | null;
       outcome_md: string | null;
     }>;
     preps: Array<{
       id: number;
+      title: string | null;
+      summary: string | null;
+      local_date: string | null;
+      status: import("@prisma/client").EntityStatus;
       project: { title: string } | null;
       outcome_md: string | null;
     }>;
     shops: Array<{
       id: number;
+      title: string | null;
+      summary: string | null;
+      local_date: string | null;
+      status: import("@prisma/client").EntityStatus;
       store_name: string | null;
       purchased_items_text: string | null;
     }>;
@@ -41,6 +53,10 @@ export class WeekService {
         cooks: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             plan_md: true,
             outcome_md: true,
             recipe: {
@@ -53,6 +69,10 @@ export class WeekService {
         preps: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             outcome_md: true,
             project: {
               select: {
@@ -64,6 +84,10 @@ export class WeekService {
         shops: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             store_name: true,
             purchased_items_text: true,
           },
@@ -85,6 +109,10 @@ export class WeekService {
         cooks: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             plan_md: true,
             outcome_md: true,
             recipe: {
@@ -97,6 +125,10 @@ export class WeekService {
         preps: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             plan_md: true,
             outcome_md: true,
             project: {
@@ -109,6 +141,10 @@ export class WeekService {
         shops: {
           select: {
             id: true,
+            title: true,
+            summary: true,
+            local_date: true,
+            status: true,
             store_name: true,
             planned_items_text: true,
             purchased_items_text: true,

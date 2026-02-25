@@ -14,29 +14,39 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
-  const {week_id, project_id, occurred_at, plan_md, outcome_md, result_pic_ids} = req.body;
+  const {week_id, project_id, title, summary, local_date, occurred_at, status, plan_md, outcome_md, result_pic_ids, details} = req.body;
 
   const newPrep = await prepService.create({
     week_id,
     project_id,
+    title,
+    summary,
+    local_date,
     occurred_at: occurred_at ? new Date(occurred_at) : null,
+    status,
     plan_md,
     outcome_md,
     result_pic_ids,
+    details,
   });
   res.status(201).json(newPrep);
 }
 
 async function handlePut(req: NextApiRequest, res: NextApiResponse) {
-  const {id, week_id, project_id, occurred_at, plan_md, outcome_md, result_pic_ids} = req.body;
+  const {id, week_id, project_id, title, summary, local_date, occurred_at, status, plan_md, outcome_md, result_pic_ids, details} = req.body;
 
   const updatedPrep = await prepService.update(id, {
     week_id,
     project_id,
+    title,
+    summary,
+    local_date,
     occurred_at: occurred_at ? new Date(occurred_at) : null,
+    status,
     plan_md,
     outcome_md,
     result_pic_ids,
+    details,
   });
   res.status(200).json(updatedPrep);
 }

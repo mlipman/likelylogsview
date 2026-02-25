@@ -7,23 +7,29 @@ async function handleGet(res: NextApiResponse) {
 }
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
-  const {title, content_md, source, url} = req.body;
+  const {title, summary, content_md, details, source, url, status} = req.body;
   const newProject = await projectService.create({
     title,
+    summary,
     content_md,
+    details,
     source,
     url,
+    status,
   });
   res.status(201).json(newProject);
 }
 
 async function handlePut(req: NextApiRequest, res: NextApiResponse) {
-  const {id, title, content_md, source, url} = req.body;
+  const {id, title, summary, content_md, details, source, url, status} = req.body;
   const updatedProject = await projectService.update(id, {
     title,
+    summary,
     content_md,
+    details,
     source,
     url,
+    status,
   });
   res.status(200).json(updatedProject);
 }

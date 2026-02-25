@@ -43,7 +43,7 @@ export class ProjectService {
   }
 
   /**
-   * Format projects for MCP string output
+   * Format projects for MCP string output (excludes details)
    */
   allProjects(projects: Project[]): string {
     if (projects.length === 0) {
@@ -51,7 +51,7 @@ export class ProjectService {
     }
 
     return `Found ${projects.length} cooking projects:\n\n${projects
-      .map(project => projectToString(project))
+      .map(project => projectToSummaryString(project))
       .join("\n")}`;
   }
 }
@@ -59,11 +59,14 @@ export class ProjectService {
 // Project utility functions for string conversion
 
 /**
- * Convert a single project to a formatted string
+ * Convert a single project to a summary string (excludes details)
+ * Used in list/MCP responses
  */
-export function projectToString(project: Project): string {
+export function projectToSummaryString(project: Project): string {
   const parts = [`**${project.title}**`];
 
+  parts.push(`Status: ${project.status}`);
+  if (project.summary) parts.push(`Summary: ${project.summary}`);
   if (project.source) parts.push(`Source: ${project.source}`);
   if (project.url) parts.push(`URL: ${project.url}`);
   if (project.content_md) parts.push(`Content:\n${project.content_md}`);
@@ -71,6 +74,19 @@ export function projectToString(project: Project): string {
   parts.push(`ID: ${project.id}`);
   parts.push(`Created: ${project.created_at}`);
   parts.push(`Updated: ${project.updated_at}`);
+  parts.push('---');
+
+  return parts.join('\n') + '\n';
+}
+
+/**
+ * Convert a single project to a full string including details
+ * Used for individual entity views
+ */
+export function projectToString(project: Project): string {
+  const parts = [projectToSummaryString(project).replace(/\n---\n$/, '')];
+
+  if (project.details) parts.push(`Details:\n${project.details}`);
   parts.push('---');
 
   return parts.join('\n') + '\n';

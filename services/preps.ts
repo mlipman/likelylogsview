@@ -62,7 +62,7 @@ export class PrepService {
   }
 
   /**
-   * Format preps for MCP string output
+   * Format preps for MCP string output (excludes details)
    */
   allPreps(preps: Prep[]): string {
     if (preps.length === 0) {
@@ -70,7 +70,7 @@ export class PrepService {
     }
 
     return `Found ${preps.length} prep sessions:\n\n${preps
-      .map(prep => prepToString(prep))
+      .map(prep => prepToSummaryString(prep))
       .join("\n")}`;
   }
 }
@@ -78,11 +78,15 @@ export class PrepService {
 // Prep utility functions for string conversion
 
 /**
- * Convert a single prep to a formatted string
+ * Convert a single prep to a summary string (excludes details)
+ * Used in list/week/MCP responses
  */
-export function prepToString(prep: Prep): string {
-  const parts = [`**Prep Session**`];
+export function prepToSummaryString(prep: Prep): string {
+  const parts = [prep.title ? `**${prep.title}**` : `**Prep Session**`];
 
+  parts.push(`Status: ${prep.status}`);
+  if (prep.summary) parts.push(`Summary: ${prep.summary}`);
+  if (prep.local_date) parts.push(`Date: ${prep.local_date}`);
   parts.push(`Week ID: ${prep.week_id}`);
   if (prep.project_id) parts.push(`Project ID: ${prep.project_id}`);
   if (prep.occurred_at) parts.push(`Occurred: ${prep.occurred_at}`);
@@ -93,6 +97,19 @@ export function prepToString(prep: Prep): string {
   parts.push(`ID: ${prep.id}`);
   parts.push(`Created: ${prep.created_at}`);
   parts.push(`Updated: ${prep.updated_at}`);
+  parts.push('---');
+
+  return parts.join('\n') + '\n';
+}
+
+/**
+ * Convert a single prep to a full string including details
+ * Used for individual entity views
+ */
+export function prepToString(prep: Prep): string {
+  const parts = [prepToSummaryString(prep).replace(/\n---\n$/, '')];
+
+  if (prep.details) parts.push(`Details:\n${prep.details}`);
   parts.push('---');
 
   return parts.join('\n') + '\n';

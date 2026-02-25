@@ -7,23 +7,29 @@ async function handleGet(res: NextApiResponse) {
 }
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
-  const {title, content_md, source, url} = req.body;
+  const {title, summary, content_md, details, source, url, status} = req.body;
   const newRecipe = await recipeService.create({
     title,
+    summary,
     content_md,
+    details,
     source,
     url,
+    status,
   });
   res.status(201).json(newRecipe);
 }
 
 async function handlePut(req: NextApiRequest, res: NextApiResponse) {
-  const {id, title, content_md, source, url} = req.body;
+  const {id, title, summary, content_md, details, source, url, status} = req.body;
   const updatedRecipe = await recipeService.update(id, {
     title,
+    summary,
     content_md,
+    details,
     source,
     url,
+    status,
   });
   res.status(200).json(updatedRecipe);
 }

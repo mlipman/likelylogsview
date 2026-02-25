@@ -1,6 +1,7 @@
 import type {NextApiRequest, NextApiResponse} from "next";
 import {importNytRecipe} from "../../../../services/nytImport";
 import {recipeService} from "../../../../services/recipes";
+import {EntityStatus} from "@prisma/client";
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
   const {url} = req.body;
@@ -11,7 +12,15 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const importedData = await importNytRecipe(url);
-  const newRecipe = await recipeService.create(importedData);
+  const newRecipe = await recipeService.create({
+    title: importedData.title,
+    summary: null,
+    content_md: importedData.content_md,
+    details: null,
+    source: importedData.source,
+    url: importedData.url,
+    status: EntityStatus.proposed,
+  });
   res.status(201).json(newRecipe);
 }
 

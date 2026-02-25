@@ -62,7 +62,7 @@ export class CookService {
   }
 
   /**
-   * Format cooks for MCP string output
+   * Format cooks for MCP string output (excludes details)
    */
   allCooks(cooks: Cook[]): string {
     if (cooks.length === 0) {
@@ -70,7 +70,7 @@ export class CookService {
     }
 
     return `Found ${cooks.length} cooking sessions:\n\n${cooks
-      .map(cook => cookToString(cook))
+      .map(cook => cookToSummaryString(cook))
       .join("\n")}`;
   }
 }
@@ -78,11 +78,15 @@ export class CookService {
 // Cook utility functions for string conversion
 
 /**
- * Convert a single cook to a formatted string
+ * Convert a single cook to a summary string (excludes details)
+ * Used in list/week/MCP responses
  */
-export function cookToString(cook: Cook): string {
-  const parts = [`**Cooking Session**`];
+export function cookToSummaryString(cook: Cook): string {
+  const parts = [cook.title ? `**${cook.title}**` : `**Cooking Session**`];
 
+  parts.push(`Status: ${cook.status}`);
+  if (cook.summary) parts.push(`Summary: ${cook.summary}`);
+  if (cook.local_date) parts.push(`Date: ${cook.local_date}`);
   parts.push(`Week ID: ${cook.week_id}`);
   if (cook.recipe_id) parts.push(`Recipe ID: ${cook.recipe_id}`);
   if (cook.occurred_at) parts.push(`Occurred: ${cook.occurred_at}`);
@@ -93,6 +97,19 @@ export function cookToString(cook: Cook): string {
   parts.push(`ID: ${cook.id}`);
   parts.push(`Created: ${cook.created_at}`);
   parts.push(`Updated: ${cook.updated_at}`);
+  parts.push('---');
+
+  return parts.join('\n') + '\n';
+}
+
+/**
+ * Convert a single cook to a full string including details
+ * Used for individual entity views
+ */
+export function cookToString(cook: Cook): string {
+  const parts = [cookToSummaryString(cook).replace(/\n---\n$/, '')];
+
+  if (cook.details) parts.push(`Details:\n${cook.details}`);
   parts.push('---');
 
   return parts.join('\n') + '\n';

@@ -16,7 +16,11 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
   const {
     week_id,
+    title,
+    summary,
+    local_date,
     occurred_at,
+    status,
     planned_items_text,
     planning_notes,
     purchased_items_text,
@@ -24,11 +28,16 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
     total_cost,
     receipt_pic_id,
     shopping_notes,
+    details,
   } = req.body;
 
   const newShop = await shopService.create({
     week_id,
+    title,
+    summary,
+    local_date,
     occurred_at: occurred_at ? new Date(occurred_at) : null,
+    status,
     planned_items_text,
     planning_notes,
     purchased_items_text,
@@ -36,6 +45,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
     total_cost,
     receipt_pic_id,
     shopping_notes,
+    details,
   });
   res.status(201).json(newShop);
 }
@@ -44,7 +54,11 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse) {
   const {
     id,
     week_id,
+    title,
+    summary,
+    local_date,
     occurred_at,
+    status,
     planned_items_text,
     planning_notes,
     purchased_items_text,
@@ -52,11 +66,16 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse) {
     total_cost,
     receipt_pic_id,
     shopping_notes,
+    details,
   } = req.body;
 
   const updatedShop = await shopService.update(id, {
     week_id,
+    title,
+    summary,
+    local_date,
     occurred_at: occurred_at ? new Date(occurred_at) : null,
+    status,
     planned_items_text,
     planning_notes,
     purchased_items_text,
@@ -64,6 +83,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse) {
     total_cost,
     receipt_pic_id,
     shopping_notes,
+    details,
   });
   res.status(200).json(updatedShop);
 }

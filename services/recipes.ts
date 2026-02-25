@@ -43,7 +43,7 @@ export class RecipeService {
   }
 
   /**
-   * Format recipes for MCP string output
+   * Format recipes for MCP string output (excludes details)
    */
   allRecipes(recipes: Recipe[]): string {
     if (recipes.length === 0) {
@@ -51,7 +51,7 @@ export class RecipeService {
     }
 
     return `Found ${recipes.length} recipes:\n\n${recipes
-      .map(recipe => recipeToString(recipe))
+      .map(recipe => recipeToSummaryString(recipe))
       .join("\n")}`;
   }
 }
@@ -59,11 +59,14 @@ export class RecipeService {
 // Recipe utility functions for string conversion
 
 /**
- * Convert a single recipe to a formatted string
+ * Convert a single recipe to a summary string (excludes details)
+ * Used in list/MCP responses
  */
-export function recipeToString(recipe: Recipe): string {
+export function recipeToSummaryString(recipe: Recipe): string {
   const parts = [`**${recipe.title}**`];
 
+  parts.push(`Status: ${recipe.status}`);
+  if (recipe.summary) parts.push(`Summary: ${recipe.summary}`);
   if (recipe.source) parts.push(`Source: ${recipe.source}`);
   if (recipe.url) parts.push(`URL: ${recipe.url}`);
   if (recipe.content_md) parts.push(`Content:\n${recipe.content_md}`);
@@ -71,6 +74,19 @@ export function recipeToString(recipe: Recipe): string {
   parts.push(`ID: ${recipe.id}`);
   parts.push(`Created: ${recipe.created_at}`);
   parts.push(`Updated: ${recipe.updated_at}`);
+  parts.push('---');
+
+  return parts.join('\n') + '\n';
+}
+
+/**
+ * Convert a single recipe to a full string including details
+ * Used for individual entity views
+ */
+export function recipeToString(recipe: Recipe): string {
+  const parts = [recipeToSummaryString(recipe).replace(/\n---\n$/, '')];
+
+  if (recipe.details) parts.push(`Details:\n${recipe.details}`);
   parts.push('---');
 
   return parts.join('\n') + '\n';

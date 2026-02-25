@@ -58,6 +58,13 @@ model photo_log {
 // Cooking app models
 // suffix _md means markdown text
 
+enum EntityStatus {
+  proposed
+  committed
+  completed
+  abandoned
+}
+
 model Week {
   id Int @id @default(autoincrement())
   created_at DateTime @default(now())
@@ -84,10 +91,13 @@ model Recipe {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   title String
+  summary String?
   content_md String?
+  details String?
   source String?
   url String?
-  
+  status EntityStatus @default(proposed)
+
   cooks Cook[] // Recipes can be used by multiple cooks
 }
 
@@ -96,10 +106,13 @@ model Project {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   title String
+  summary String?
   content_md String?
+  details String?
   source String?
   url String?
-  
+  status EntityStatus @default(proposed)
+
   preps Prep[] // Projects can be used by multiple preps
 }
 
@@ -108,19 +121,26 @@ model Shop {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   week_id Int
+  title String?
+  summary String?
+  local_date String?
   occurred_at DateTime?
-  
+  status EntityStatus @default(proposed)
+
   // Planning phase data
   planned_items_text String? // Shopping list as text
   planning_notes String? // Chat/notes during planning
-  
-  // Action phase data  
+
+  // Action phase data
   purchased_items_text String? // What was actually bought
   store_name String?
   total_cost Decimal?
   receipt_pic_id String? // Cloudinary image ID
   shopping_notes String? // How it went, substitutions made, etc.
-  
+
+  // Detailed notes, only shown on entity page (not in week/list views)
+  details String?
+
   week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
 }
 
@@ -130,15 +150,22 @@ model Prep {
   updated_at DateTime @updatedAt
   week_id Int
   project_id Int?
+  title String?
+  summary String?
+  local_date String?
   occurred_at DateTime?
-  
+  status EntityStatus @default(proposed)
+
   // Planning phase data
   plan_md String? // May or may not match the project content
-  
+
   // Action phase data
   outcome_md String?
   result_pic_ids String? // Comma-separated Cloudinary IDs
-  
+
+  // Detailed notes, only shown on entity page (not in week/list views)
+  details String?
+
   week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
 }
@@ -149,15 +176,22 @@ model Cook {
   updated_at DateTime @updatedAt
   week_id Int
   recipe_id Int?
+  title String?
+  summary String?
+  local_date String?
   occurred_at DateTime?
-  
+  status EntityStatus @default(proposed)
+
   // Planning phase data
   plan_md String? // May or may not match the recipe content
-  
+
   // Action phase data
   outcome_md String?
   result_pic_ids String? // Comma-separated Cloudinary IDs
-  
+
+  // Detailed notes, only shown on entity page (not in week/list views)
+  details String?
+
   week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
   recipe Recipe? @relation(fields: [recipe_id], references: [id], onDelete: SetNull)
 }
